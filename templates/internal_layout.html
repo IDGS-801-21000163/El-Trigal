@@ -1,0 +1,46 @@
+{% extends "layout.html" %}
+{% block container %}
+<section class="internal-shell">
+    <aside class="internal-sidebar">
+        <a class="sidebar-logo" href="{{ url_for('panel') }}">
+            <div class="brand-mark brand-mark--compact">
+                <div class="brand-mark__ring">
+                    <div class="brand-mark__inner">
+                        <p class="brand-mark__title">El Trigal</p>
+                        <div class="brand-mark__bread"></div>
+                        <p class="brand-mark__year">Desde 2026</p>
+                    </div>
+                </div>
+            </div>
+        </a>
+
+        <nav class="module-nav">
+            {% for item in nav_modules %}
+                <a class="module-nav__link{% if module['slug'] == item.slug %} is-active{% endif %}" href="{{ url_for(item.slug|replace('-', '_') ~ '.inicio') }}">
+                    <span class="module-nav__icon"></span>
+                    <span>{{ item.name }}</span>
+                </a>
+            {% endfor %}
+        </nav>
+    </aside>
+
+    <main class="internal-content">
+        <header class="module-header-bar">
+            <div>
+                <h1>{{ module['name'] }}</h1>
+                <p>{{ module['description'] }}</p>
+            </div>
+        </header>
+
+        <nav class="action-nav">
+            {% for action in actions %}
+                <a class="action-nav__link{% if current_action == action.slug %} is-active{% endif %}" href="{{ url_for(module['slug']|replace('-', '_') ~ '.' ~ action.slug) }}">
+                    {{ action.name }}
+                </a>
+            {% endfor %}
+        </nav>
+
+        {% block module_content %}{% endblock %}
+    </main>
+</section>
+{% endblock %}

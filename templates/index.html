@@ -1,0 +1,28 @@
+{% extends "layout.html" %}
+{% block title %}Acceso | El Trigal{% endblock %}
+{% block container %}
+<section class="auth-card">
+    <div class="brand-mark">
+        <div class="brand-mark__ring">
+            <div class="brand-mark__inner">
+                <p class="brand-mark__title">El Trigal</p>
+                <div class="brand-mark__bread"></div>
+                <p class="brand-mark__year">Desde 2026</p>
+            </div>
+        </div>
+    </div>
+
+    <form class="auth-form" action="{{ url_for('panel') }}" method="get">
+        <label class="sr-only" for="usuario">Usuario</label>
+        <input id="usuario" name="usuario" type="text" placeholder="Usuario" autocomplete="username">
+
+        <label class="sr-only" for="contrasena">Contrasena</label>
+        <input id="contrasena" name="contrasena" type="password" placeholder="Contrasena" autocomplete="current-password">
+
+        <a class="auth-link" href="{{ url_for('recuperar') }}">¿Olvidaste tu contrasena?</a>
+
+        <button class="primary-button" type="submit">Entrar</button>
+        <a class="secondary-button" href="{{ url_for('registro') }}">Registrarme</a>
+    </form>
+</section>
+{% endblock %}

@@ -1,0 +1,18 @@
+{% extends "layout.html" %}
+{% block title %}Recuperar Cuenta | El Trigal{% endblock %}
+{% block container %}
+<section class="auth-card auth-card--wide">
+    <header class="auth-copy">
+        <p class="eyebrow">Recuperacion</p>
+        <h1>¿Olvidaste tu contrasena?</h1>
+        <p>Escribe tu correo y enviaremos una solicitud de recuperacion por el flujo del servidor.</p>
+    </header>
+
+    <form class="auth-form" action="{{ url_for('recuperar') }}" method="get">
+        <input name="correo" type="email" placeholder="Correo electronico" autocomplete="email">
+
+        <button class="primary-button" type="button">Enviar solicitud</button>
+        <a class="secondary-button secondary-button--ghost" href="{{ url_for('index') }}">Volver al acceso</a>
+    </form>
+</section>
+{% endblock %}

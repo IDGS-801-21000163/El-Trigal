@@ -1,0 +1,38 @@
+<section class="detail-panel">
+    <article class="detail-card">
+        <h2>Resumen</h2>
+        <dl class="detail-list">
+            {% for field in module['fields'] %}
+                <div>
+                    <dt>{{ field }}</dt>
+                    <dd>{{ field }} de ejemplo</dd>
+                </div>
+            {% endfor %}
+        </dl>
+    </article>
+
+    <article class="detail-card">
+        <h2>Registros visibles</h2>
+        <div class="table-card">
+            <table>
+                <thead>
+                    <tr>
+                        {% for column in module['columns'] %}
+                            <th>{{ column }}</th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in module['items'] %}
+                        <tr>
+                            <td>{{ loop.index }}</td>
+                            <td>{{ item.title }}</td>
+                            <td>{{ item.subtitle }}</td>
+                            <td>{{ item.meta }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </article>
+</section>
