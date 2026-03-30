@@ -1,2 +1,46 @@
-{% extends "internal_layout.html" %}
-{% block module_content %}{% include "_module_detail_content.html" %}{% endblock %}
+{% extends "base.html" %}
+
+{% block content %}
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        {% for category, message in messages %}
+            <div class="p-4 mb-4 rounded-lg
+                {% if category == 'error' %}bg-red-100 text-red-700
+                {% elif category == 'success' %}bg-green-100 text-green-700
+                {% else %}bg-blue-100 text-blue-700
+                {% endif %}">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endif %}
+{% endwith %}
+
+<div class="bg-white p-6 rounded-xl shadow max-w-xl">
+
+    <img src="{{ producto.imagen }}"
+     onclick="abrirModal({{ producto.id }})"
+     class="rounded-lg mb-3 h-40 w-full object-cover cursor-pointer hover:scale-105 transition">
+    <h2 class="text-xl font-bold text-[#6b4f3b] mb-2">
+        {{ producto.nombre }}
+    </h2>
+
+    <p><b>Precio:</b> $ {{ "%.2f"|format(producto.precio) }}</p>
+    <p><b>Costo:</b> $ {{ "%.2f"|format(producto.costo) }}</p>
+    <p><b>Categoría:</b> {{ producto.categoria }}</p>
+
+    <div class="mt-4 flex gap-2">
+        <a href="{{ url_for('productos.editar', id=producto.id) }}"
+           class="bg-[#9c775b] text-white px-4 py-2 rounded-lg hover:bg-[#7a5d47]">
+            Editar
+        </a>
+
+        <a href="{{ url_for('productos.inicio') }}"
+           class="bg-[#c69c6d] text-white px-4 py-2 rounded-lg hover:bg-[#b8914d]">
+            Regresar
+        </a>
+    </div>
+
+</div>
+
+{% endblock %}

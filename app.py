@@ -3,10 +3,14 @@ from flask import Flask, redirect, render_template, url_for
 from api import ALL_BLUEPRINTS
 from api.common import ACTIONS, MODULES, NAV_MODULES
 from config import DevelopmentConfig
+from models import db
 
 
 app = Flask(__name__)
 app.config.from_object(DevelopmentConfig)
+
+# Inicializar base de datos
+db.init_app(app)
 
 for module, blueprint in zip(MODULES, ALL_BLUEPRINTS):
     app.register_blueprint(blueprint, url_prefix=f"/{module['slug']}")
@@ -48,3 +52,5 @@ def panel():
 
 if __name__ == "__main__":
     app.run(port=4000, debug=True)
+    
+print([bp.name for bp in ALL_BLUEPRINTS])

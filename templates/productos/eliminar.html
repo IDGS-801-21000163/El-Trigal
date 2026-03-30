@@ -1,3 +1,51 @@
-{% extends "internal_layout.html" %}
-{% set action_label = "Eliminar" %}
-{% block module_content %}{% include "_module_form_content.html" %}{% endblock %}
+{% extends "base.html" %}
+
+{% block content %}
+
+<div class="flex justify-center items-center h-[70vh]">
+
+    <div class="bg-white p-6 rounded-xl shadow text-center w-96">
+
+        <h2 class="text-lg font-bold text-[#6b4f3b] mb-4">
+            Confirmar eliminación
+        </h2>
+
+        <p class="mb-4">
+            ¿Deseas desactivar este producto?
+        </p>
+
+        <p class="font-semibold mb-6">
+            {{ producto.nombre }}
+        </p>
+
+        <form method="POST">
+            {{ form.hidden_tag() }}
+            <div class="flex justify-center gap-4">
+                {{ form.confirm(class="bg-red-500 text-white px-4 py-2 rounded-lg cursor-pointer hover:bg-red-600") }}
+
+                <a href="{{ url_for('productos.inicio') }}"
+                   class="bg-gray-400 text-white px-4 py-2 rounded-lg">
+                    Cancelar
+                </a>
+            </div>
+        </form>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="p-4 mt-4 rounded-lg
+                        {% if category == 'error' %}bg-red-100 text-red-700
+                        {% elif category == 'success' %}bg-green-100 text-green-700
+                        {% else %}bg-blue-100 text-blue-700
+                        {% endif %}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+    </div>
+
+</div>
+
+{% endblock %}

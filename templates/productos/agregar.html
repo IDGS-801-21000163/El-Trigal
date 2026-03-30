@@ -1,3 +1,100 @@
-{% extends "internal_layout.html" %}
-{% set action_label = "Agregar" %}
-{% block module_content %}{% include "_module_form_content.html" %}{% endblock %}
+{% extends "base.html" %}
+
+{% block content %}
+
+<h1 class="text-2xl font-bold text-[#6b4f3b] mb-6">
+    Agregar producto
+</h1>
+
+<form method="POST" enctype="multipart/form-data"
+      class="bg-white p-6 rounded-xl shadow max-w-3xl">
+
+    {{ form.hidden_tag() }}
+
+    <div class="grid grid-cols-3 gap-4 mb-4">
+        <div>
+            {% if form.nombre.errors %}
+                {{ form.nombre(class="border border-red-500 px-3 py-2 rounded-lg w-full") }}
+                <p class="text-red-500 text-xs mt-1">
+                    {% for error in form.nombre.errors %}
+                        {{ error }}
+                    {% endfor %}
+                </p>
+            {% else %}
+                {{ form.nombre(class="border px-3 py-2 rounded-lg w-full") }}
+            {% endif %}
+        </div>
+
+        <div>
+            {% if form.fk_categoria.errors %}
+                {{ form.fk_categoria(class="border border-red-500 px-3 py-2 rounded-lg w-full") }}
+                <p class="text-red-500 text-xs mt-1">
+                    {% for error in form.fk_categoria.errors %}
+                        {{ error }}
+                    {% endfor %}
+                </p>
+            {% else %}
+                {{ form.fk_categoria(class="border px-3 py-2 rounded-lg w-full") }}
+            {% endif %}
+        </div>
+
+        <div>
+            {% if form.precio.errors %}
+                {{ form.precio(class="border border-red-500 px-3 py-2 rounded-lg w-full") }}
+                <p class="text-red-500 text-xs mt-1">
+                    {% for error in form.precio.errors %}
+                        {{ error }}
+                    {% endfor %}
+                </p>
+            {% else %}
+                {{ form.precio(class="border px-3 py-2 rounded-lg w-full") }}
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="mb-4">
+        {% if form.foto.errors %}
+            {{ form.foto(class="border border-red-500 px-3 py-2 rounded-lg w-full") }}
+            <p class="text-red-500 text-xs mt-1">
+                {% for error in form.foto.errors %}
+                    {{ error }}
+                {% endfor %}
+            </p>
+        {% else %}
+            {{ form.foto(class="border px-3 py-2 rounded-lg w-full") }}
+        {% endif %}
+    </div>
+
+    <!-- RNF: costo automático -->
+    <div class="mb-4">
+        <label class="text-sm text-gray-500">Costo de producción</label>
+        {{ form.costo_produccion(class="border px-3 py-2 rounded-lg w-full bg-gray-200") }}
+        <p class="text-xs text-gray-400 mt-1">El costo se calcula automáticamente desde las recetas</p>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="p-4 mb-4 rounded-lg
+                    {% if category == 'error' %}bg-red-100 text-red-700
+                    {% elif category == 'success' %}bg-green-100 text-green-700
+                    {% else %}bg-blue-100 text-blue-700
+                    {% endif %}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <div class="flex gap-4">
+        {{ form.submit(class="bg-[#9c775b] text-white px-6 py-2 rounded-lg cursor-pointer hover:bg-[#7a5d47]") }}
+
+        <a href="{{ url_for('productos.inicio') }}"
+           class="bg-[#c69c6d] text-white px-6 py-2 rounded-lg">
+            Regresar
+        </a>
+    </div>
+
+</form>
+
+{% endblock %}

@@ -245,44 +245,47 @@ def create_module_blueprint(module_slug):
     module = MODULE_MAP[module_slug]
     blueprint = Blueprint(module_slug.replace("-", "_"), __name__, template_folder="../templates")
 
-    @blueprint.route("/")
-    def inicio():
-        return render_template(
-            f"{module_slug}/inicio.html",
-            module=module,
-            current_action="inicio",
-        )
+    # ⚠️ SOLO crear rutas SI NO es productos
+    if module_slug != "productos":
 
-    @blueprint.route("/agregar")
-    def agregar():
-        return render_template(
-            f"{module_slug}/agregar.html",
-            module=module,
-            current_action="agregar",
-        )
+        @blueprint.route("/")
+        def inicio():
+            return render_template(
+                f"{module_slug}/inicio.html",
+                module=module,
+                current_action="inicio",
+            )
 
-    @blueprint.route("/editar")
-    def editar():
-        return render_template(
-            f"{module_slug}/editar.html",
-            module=module,
-            current_action="editar",
-        )
+        @blueprint.route("/agregar")
+        def agregar():
+            return render_template(
+                f"{module_slug}/agregar.html",
+                module=module,
+                current_action="agregar",
+            )
 
-    @blueprint.route("/detalle")
-    def detalle():
-        return render_template(
-            f"{module_slug}/detalle.html",
-            module=module,
-            current_action="detalle",
-        )
+        @blueprint.route("/editar")
+        def editar():
+            return render_template(
+                f"{module_slug}/editar.html",
+                module=module,
+                current_action="editar",
+            )
 
-    @blueprint.route("/eliminar")
-    def eliminar():
-        return render_template(
-            f"{module_slug}/eliminar.html",
-            module=module,
-            current_action="eliminar",
-        )
+        @blueprint.route("/detalle")
+        def detalle():
+            return render_template(
+                f"{module_slug}/detalle.html",
+                module=module,
+                current_action="detalle",
+            )
+
+        @blueprint.route("/eliminar")
+        def eliminar():
+            return render_template(
+                f"{module_slug}/eliminar.html",
+                module=module,
+                current_action="eliminar",
+            )
 
     return blueprint
