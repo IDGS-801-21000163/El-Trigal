@@ -90,8 +90,10 @@
             <input type="text" id="producto_nombre" disabled
                 class="w-full mb-4 px-3 py-2 rounded bg-gray-200">
 
-            <input type="number" name="cantidad" placeholder="Cantidad a solicitar"
-                class="w-full mb-4 px-3 py-2 rounded bg-white" required>
+            <input type="number" name="cantidad" id="cantidad"
+                placeholder="Cantidad a solicitar"
+                class="w-full mb-4 px-3 py-2 rounded bg-white"
+                min="1" required>
 
             <div class="flex justify-end gap-2">
                 <button type="button" onclick="cerrarModal()"
@@ -200,6 +202,21 @@ buscador.addEventListener("keyup", filtrarProductos);
 
 
 filtroCategoria.addEventListener("change", filtrarProductos);
+
+const form = document.querySelector("#modal form");
+const inputCantidad = document.getElementById("cantidad");
+
+form.addEventListener("submit", function(e) {
+    const valor = parseInt(inputCantidad.value);
+
+    if (!valor || valor <= 0) {
+        e.preventDefault();
+
+        alert("La cantidad debe ser mayor a 0");
+
+        inputCantidad.focus();
+    }
+});
 </script>
 
 {% endblock %}

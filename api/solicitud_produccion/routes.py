@@ -107,7 +107,7 @@ def agregar():
         if cantidad <= 0:
             raise ValueError
     except:
-        flash("Cantidad inválida", "error")
+        flash("La cantidad debe ser mayor a 0", "error")
         return redirect(url_for("solicitud_produccion.inicio"))
 
     # Crear solicitud
