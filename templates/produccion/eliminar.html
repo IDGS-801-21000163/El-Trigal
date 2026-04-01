@@ -1,3 +1,45 @@
-{% extends "internal_layout.html" %}
-{% set action_label = "Eliminar" %}
-{% block module_content %}{% include "_module_form_content.html" %}{% endblock %}
+{% extends 'base.html' %}
+{% block title %}Cancelar Producción{% endblock %}
+
+{% block content %}
+
+<div class="bg-white p-6 rounded-xl shadow w-1/2">
+
+    <h2 class="text-xl font-bold text-[#7a5d47] mb-4">
+        ¿Cancelar producción?
+    </h2>
+
+    <p class="mb-6 text-gray-600">
+        Esta acción cambiará el estado a CANCELADO.
+    </p>
+
+    <form method="POST" class="bg-white p-6 rounded-xl shadow w-2/3">
+
+    <div class="grid grid-cols-2 gap-4 mb-4">
+
+        <input type="number" name="cantidad"
+            placeholder="Cantidad de merma extra"
+            class="p-2 border rounded-lg" required>
+
+        <input type="text" name="observacion"
+            placeholder="Observación (obligatoria)"
+            class="p-2 border rounded-lg col-span-2" required>
+
+    </div>
+
+    <div class="flex gap-4">
+        <button class="bg-[#7a5d47] text-white px-6 py-2 rounded-lg">
+            Guardar
+        </button>
+
+        <a href="{{ url_for('produccion.inicio') }}"
+           class="bg-[#c49a6c] px-6 py-2 rounded-lg text-white">
+            Cancelar
+        </a>
+    </div>
+
+</form>
+
+</div>
+
+{% endblock %}

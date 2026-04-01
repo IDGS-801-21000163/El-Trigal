@@ -306,3 +306,49 @@ class SolicitudProduccion(db.Model):
     empleado = db.relationship('Empleado', backref='solicitudes_produccion')
     usuario_creador = db.relationship('Usuario', foreign_keys=[usuario_creacion], backref='solicitudes_creadas')
     usuario_editor = db.relationship('Usuario', foreign_keys=[usuario_movimiento], backref='solicitudes_editadas')
+    
+    
+class Produccion(db.Model):
+    __tablename__ = "produccion"
+
+    id = db.Column(db.Integer, primary_key=True)
+    fk_empleado = db.Column(db.Integer, db.ForeignKey("empleado.id"))
+    fk_sucursal = db.Column(db.Integer, db.ForeignKey("sucursal.id"))
+
+    estado = db.Column(db.Enum(
+        "PENDIENTE", "EN PROCESO", "TERMINADO", "CANCELADO"
+    ), default="PENDIENTE")
+
+    estatus = db.Column(db.Enum("ACTIVO", "INACTIVO"), default="ACTIVO")
+
+    fecha_creacion = db.Column(db.DateTime, default=datetime.utcnow)
+    usuario_creacion = db.Column(db.Integer)
+    usuario_movimiento = db.Column(db.Integer)
+
+
+class ProduccionDetalle(db.Model):
+    __tablename__ = 'produccion_detalle'
+
+    id = db.Column(db.Integer, primary_key=True)
+    fk_produccion = db.Column(db.Integer, nullable=False)
+    fk_producto = db.Column(db.Integer, nullable=False)
+    fk_solicitud = db.Column(db.Integer)
+
+    cantidad_solicitada = db.Column(db.Integer, nullable=False)
+    cantidad_producto = db.Column(db.Integer, nullable=False)
+    cantidad_merma = db.Column(db.Integer)
+
+    origen = db.Column(db.String(50), nullable=False)
+
+    usuario_creacion = db.Column(db.Integer, nullable=False)
+    usuario_movimiento = db.Column(db.Integer, nullable=False)
+    
+class RecetaDetalle(db.Model):
+    __tablename__ = "receta_detalle"
+
+    id = db.Column(db.Integer, primary_key=True)
+    fk_receta = db.Column(db.Integer, db.ForeignKey("receta.id"))
+    fk_insumo = db.Column(db.Integer)
+    fk_unidad = db.Column(db.Integer)
+    cantidad_insumo = db.Column(db.Float)
+    estatus = db.Column(db.String(10))

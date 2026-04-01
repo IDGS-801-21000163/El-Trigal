@@ -1,3 +1,37 @@
-{% extends "internal_layout.html" %}
-{% set action_label = "Editar" %}
-{% block module_content %}{% include "_module_form_content.html" %}{% endblock %}
+{% extends 'base.html' %}
+{% block title %}Terminar Producción{% endblock %}
+
+{% block content %}
+
+<h1 class="text-2xl font-bold text-[#7a5d47] mb-6">
+    Terminar producción
+</h1>
+
+<form method="POST" class="bg-white p-6 rounded-xl shadow w-2/3">
+
+    <div class="grid grid-cols-2 gap-4 mb-4">
+
+        <input type="number" name="piezas"
+            placeholder="Cantidad de piezas correctas"
+            class="p-2 border rounded-lg" required>
+
+        <input type="number" name="merma"
+            placeholder="Cantidad de merma"
+            class="p-2 border rounded-lg" required>
+
+    </div>
+
+    <div class="flex gap-4">
+        <button class="bg-[#7a5d47] text-white px-6 py-2 rounded-lg">
+            Guardar y cerrar
+        </button>
+
+        <a href="{{ url_for('produccion.inicio') }}"
+           class="bg-[#c49a6c] px-6 py-2 rounded-lg text-white">
+            Regresar
+        </a>
+    </div>
+
+</form>
+
+{% endblock %}

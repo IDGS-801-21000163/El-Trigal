@@ -302,3 +302,13 @@ class ConfirmarEliminacionInventarioForm(FlaskForm):
     
     confirm = SubmitField('Sí, desactivar')
     cancel = SubmitField('Cancelar')
+
+class ProduccionForm(FlaskForm):
+    cantidad = IntegerField(
+        "Cantidad",
+        validators=[
+            DataRequired(),
+            NumberRange(min=1, message="Debe ser mayor a 0")
+        ]
+    )
+    submit = SubmitField("Iniciar producción")

@@ -59,11 +59,38 @@
        {% endif %}">
         Solicitud de producción
     </a>
+    <!-- producción -->
+    <a href="{{ url_for('produccion.inicio') }}"
+       class="block px-6 py-3 rounded-lg transition
+       {% if request.endpoint.startswith('produccion') %}
+           bg-[#ae712f] text-white
+       {% else %}
+           bg-[#b9772b] hover:bg-[#ae712f]/80 text-white
+       {% endif %}">
+        Producción
+    </a>
 </nav>
     </aside>
 
     <!-- Contenido -->
     <main class="flex-1 p-8">
+
+        <!-- ✅ Mensajes flash globales -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="p-4 mb-4 rounded-lg
+                        {% if category == 'error' %}bg-red-100 text-red-700
+                        {% elif category == 'success' %}bg-green-100 text-green-700
+                        {% elif category == 'warning' %}bg-yellow-100 text-yellow-800
+                        {% else %}bg-blue-100 text-blue-700
+                        {% endif %}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
         {% block content %}{% endblock %}
     </main>
 

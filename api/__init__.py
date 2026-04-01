@@ -16,6 +16,7 @@ from api.sucursales import sucursales
 from api.usuarios import usuarios
 from api.ventas import ventas
 from api.solicitud_produccion import solicitud_produccion
+from api.produccion import produccion
 
 
 ALL_BLUEPRINTS = [

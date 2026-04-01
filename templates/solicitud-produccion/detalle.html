@@ -25,9 +25,11 @@
         class="px-4 py-2 rounded-lg bg-white shadow">
 
         <option value="">Todos los estados</option>
-        <option value="PENDIENTE" {% if estado == 'PENDIENTE' %}selected{% endif %}>Pendiente</option>
-        <option value="EN PROCESO" {% if estado == 'EN PROCESO' %}selected{% endif %}>En proceso</option>
-        <option value="CANCELADO" {% if estado == 'CANCELADO' %}selected{% endif %}>Cancelado</option>
+        <option value="PENDIENTE"      {% if estado == 'PENDIENTE'      %}selected{% endif %}>Pendiente</option>
+        <option value="APROBADA"       {% if estado == 'APROBADA'       %}selected{% endif %}>Aprobada</option>
+        <option value="EN_PRODUCCION"  {% if estado == 'EN_PRODUCCION'  %}selected{% endif %}>En producción</option>
+        <option value="TERMINADA"      {% if estado == 'TERMINADA'      %}selected{% endif %}>Terminada</option>
+        <option value="RECHAZADA"      {% if estado == 'RECHAZADA'      %}selected{% endif %}>Rechazada</option>
     </select>
 
     <button class="bg-[#a67c52] text-white px-4 py-2 rounded-lg hover:bg-[#8d6846]">
@@ -66,20 +68,32 @@
                 <td>Ventas</td>
 
                 <td>
-                    {% if orden.estado == 'PENDIENTE' %}
-                        <span class="bg-yellow-200 text-yellow-800 px-2 py-1 rounded">
-                            Pendiente
-                        </span>
-                    {% elif orden.estado == 'EN PROCESO' %}
-                        <span class="bg-blue-200 text-blue-800 px-2 py-1 rounded">
-                            Proceso
-                        </span>
-                    {% else %}
-                        <span class="bg-red-200 text-red-800 px-2 py-1 rounded">
-                            Cancelado
-                        </span>
-                    {% endif %}
-                </td>
+                {% if orden.estado == 'PENDIENTE' %}
+                    <span class="bg-yellow-200 text-yellow-800 px-2 py-1 rounded">
+                        Pendiente
+                    </span>
+                {% elif orden.estado == 'APROBADA' %}
+                    <span class="bg-blue-200 text-blue-800 px-2 py-1 rounded">
+                        Aprobada
+                    </span>
+                {% elif orden.estado == 'EN_PRODUCCION' %}
+                    <span class="bg-orange-300 text-orange-900 px-2 py-1 rounded">
+                        En producción
+                    </span>
+                {% elif orden.estado == 'TERMINADA' %}
+                    <span class="bg-green-200 text-green-800 px-2 py-1 rounded">
+                        Terminada
+                    </span>
+                {% elif orden.estado == 'RECHAZADA' %}
+                    <span class="bg-red-200 text-red-800 px-2 py-1 rounded">
+                        Rechazada
+                    </span>
+                {% else %}
+                    <span class="bg-gray-200 text-gray-700 px-2 py-1 rounded">
+                        {{ orden.estado }}
+                    </span>
+                {% endif %}
+            </td>
 
             </tr>
             {% endfor %}
