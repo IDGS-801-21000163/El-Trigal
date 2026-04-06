@@ -1,2 +1,58 @@
-{% extends "internal_layout.html" %}
-{% block module_content %}{% include "_module_detail_content.html" %}{% endblock %}
+{% extends "layout.html" %}
+
+{% block page_title %}
+    Editar usuario
+{% endblock %}
+
+{% block card_title %}
+    Actualizar rol de usuario
+{% endblock %}
+
+{% block content %}
+
+{% set endpoint = module['slug']|replace('-', '_') %}
+
+<div class="form-container" style="max-width: 420px; margin: auto;">
+
+    <!-- TEXTO -->
+    <div style="margin-bottom: 10px;">
+        <p style="font-size: 0.85rem; color: var(--brown-light);">
+            Selecciona el tipo de usuario que deseas asignar
+        </p>
+    </div>
+
+    <!-- FORM -->
+    <form method="POST" action="{{ url_for(endpoint ~ '.editar', id=usuario.id) }}">
+
+        <div class="form-group">
+            <span>Tipo de usuario</span>
+
+            <select name="rol_id" id="rol" class="form-input">
+                {% for rol in roles %}
+                    <option value="{{ rol.id }}" {% if usuario.fk_rol == rol.id %}selected{% endif %}>
+                        {{ rol.nombre }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <!-- BOTONES -->
+        <div class="button-row" style="justify-content: space-between; margin-top: 20px;">
+
+            <a href="{{ url_for(endpoint ~ '.inicio') }}"
+               class="btn btn-outline">
+                ← Volver
+            </a>
+
+            <button type="submit"
+                    class="btn btn-primary">
+                Guardar cambios
+            </button>
+
+        </div>
+
+    </form>
+
+</div>
+
+{% endblock %}

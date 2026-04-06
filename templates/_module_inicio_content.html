@@ -1,37 +1,5 @@
-<section class="search-row">
-    <label class="search-box">
-        <input type="text" placeholder="{{ module['search_placeholder'] }}">
-        <span class="search-box__icon"></span>
-    </label>
+{% set endpoint = module['slug']|replace('-', '_') %}
 
-    <label class="filter-box">
-        <select>
-            <option>{{ module['filter_label'] }}</option>
-        </select>
-    </label>
+<section class="module-grid grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+    {% block module_items %}{% endblock %}
 </section>
-
-{% if module['slug'] in ['productos', 'inventario-productos'] %}
-    <section class="product-grid">
-        {% for item in module['items'] %}
-            <article class="product-card">
-                <div class="product-card__image{% if loop.index == 2 %} product-card__image--alt{% endif %}"></div>
-                <h2>{{ item.title }}</h2>
-                <p>{{ item.subtitle }}</p>
-                <strong>{{ item.meta }}</strong>
-                <a class="outline-button" href="{{ url_for(module['slug']|replace('-', '_') ~ '.detalle') }}">Detalle</a>
-            </article>
-        {% endfor %}
-    </section>
-{% else %}
-    <section class="module-grid">
-        {% for item in module['items'] %}
-            <article class="info-card">
-                <h2>{{ item.title }}</h2>
-                <p>{{ item.subtitle }}</p>
-                <strong>{{ item.meta }}</strong>
-                <a class="outline-button" href="{{ url_for(module['slug']|replace('-', '_') ~ '.detalle') }}">Detalle</a>
-            </article>
-        {% endfor %}
-    </section>
-{% endif %}

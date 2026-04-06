@@ -1,0 +1,92 @@
+{% extends "layout.html" %}
+
+{% block page_title %}
+    Costo y utilidad por producto
+{% endblock %}
+
+{% block card_title %}
+    Desglose: {{ producto.nombre }}
+{% endblock %}
+
+{% block content %}
+
+<div class="form-container">
+
+    {% if producto.receta %}
+
+    <!-- DESGLOSE DE INSUMOS -->
+    <h3 class="form-section-title">Insumos de la receta</h3>
+
+    <div style="overflow-x:auto; margin-bottom:24px;">
+        <table style="width:100%; border-collapse:collapse; font-size:0.875rem;">
+            <thead>
+                <tr style="background:var(--brown-light, #c89b3c); color:white;">
+                    <th style="padding:10px 12px; text-align:left;">Insumo</th>
+                    <th style="padding:10px 12px; text-align:left;">Cantidad</th>
+                    <th style="padding:10px 12px; text-align:left;">Unidad</th>
+                    <th style="padding:10px 12px; text-align:left;">Merma %</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for detalle in producto.receta.detalles %}
+                {% if detalle.estatus == 'ACTIVO' %}
+                <tr style="border-bottom:1px solid #e5e7eb;">
+                    <td style="padding:10px 12px;">{{ detalle.insumo.nombre }}</td>
+                    <td style="padding:10px 12px;">{{ detalle.cantidad_insumo }}</td>
+                    <td style="padding:10px 12px;">{{ detalle.unidad.nombre if detalle.unidad else '—' }}</td>
+                    <td style="padding:10px 12px;">{{ detalle.insumo.porcentaje_merma }}%</td>
+                </tr>
+                {% endif %}
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- RESUMEN -->
+    <h3 class="form-section-title">Resumen financiero</h3>
+
+    <div class="form-grid">
+
+        <div class="employee-card" style="text-align:center; padding:16px;">
+            <p style="font-size:0.8rem; color:#6b7280; margin:0;">Subtotal (costo producción)</p>
+            <p style="font-size:1.5rem; font-weight:700; color:var(--brown, #8b5e3c); margin:4px 0;">
+                ${{ producto.costo_produccion }}
+            </p>
+        </div>
+
+        <div class="employee-card" style="text-align:center; padding:16px;">
+            <p style="font-size:0.8rem; color:#6b7280; margin:0;">Utilidad</p>
+            <p style="font-size:1.5rem; font-weight:700; color:#16a34a; margin:4px 0;">
+                ${{ (producto.precio - producto.costo_produccion) | round(2) }}
+            </p>
+        </div>
+
+        <div class="employee-card" style="text-align:center; padding:16px;">
+            <p style="font-size:0.8rem; color:#6b7280; margin:0;">Margen de ganancia</p>
+            <p style="font-size:1.5rem; font-weight:700; color:#2563eb; margin:4px 0;">
+                {% if producto.precio > 0 %}
+                    {{ ((producto.precio - producto.costo_produccion) / producto.precio * 100) | round(1) }}%
+                {% else %}
+                    0%
+                {% endif %}
+            </p>
+        </div>
+
+    </div>
+
+    {% else %}
+    <p style="text-align:center; color:#6b7280; padding:24px;">
+        Este producto no tiene receta registrada.
+    </p>
+    {% endif %}
+
+    <!-- VOLVER -->
+    <div class="button-row" style="margin-top:24px;">
+        <a href="{{ url_for('costo_producto.inicio') }}" class="btn btn-outline">
+            ← Volver
+        </a>
+    </div>
+
+</div>
+
+{% endblock %}

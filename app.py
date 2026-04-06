@@ -1,12 +1,26 @@
+import os
+
 from flask import Flask, redirect, render_template, url_for
 
 from api import ALL_BLUEPRINTS
 from api.common import ACTIONS, MODULES, NAV_MODULES
 from config import DevelopmentConfig
+from flask import Flask, render_template, request, redirect, url_for, flash
+from flask_wtf.csrf import CSRFProtect
+from flask import g
+from flask_migrate import Migrate
+
+from config import DevelopmentConfig
+import forms
+from models import db
 
 
 app = Flask(__name__)
 app.config.from_object(DevelopmentConfig)
+
+csrf = CSRFProtect()
+db.init_app(app)
+migrate = Migrate(app, db)
 
 for module, blueprint in zip(MODULES, ALL_BLUEPRINTS):
     app.register_blueprint(blueprint, url_prefix=f"/{module['slug']}")

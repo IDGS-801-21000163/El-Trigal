@@ -1,3 +1,85 @@
-{% extends "internal_layout.html" %}
-{% set action_label = "Agregar" %}
-{% block module_content %}{% include "_module_form_content.html" %}{% endblock %}
+{% extends "layout.html" %}
+
+{% block page_title %}
+    {{ action }} puesto
+{% endblock %}
+
+{% block card_title %}
+    {{ action }} puesto
+{% endblock %}
+
+{% block content %}
+
+{% set endpoint = module['slug']|replace('-', '_') %}
+
+<div class="form-container" style="max-width: 600px; margin: auto;">
+
+    <!-- TEXTO -->
+    <div style="margin-bottom: 16px;">
+        <p style="font-size: 0.9rem; color: var(--brown-light);">
+            Completa la información del puesto
+        </p>
+    </div>
+
+    <form method="POST">
+        {{ form.hidden_tag() }}
+
+        <div class="form-grid">
+
+            <!-- NOMBRE -->
+            <label>
+                <span>{{ form.nombre.label.text }}</span>
+                {{ form.nombre(class="form-input") }}
+                {% if form.nombre.errors %}
+                    <span class="text-error">{{ form.nombre.errors[0] }}</span>
+                {% endif %}
+            </label>
+
+            <!-- DESCRIPCIÓN -->
+            <label style="grid-column: 1 / -1;">
+                <span>{{ form.descripcion.label.text }}</span>
+                {{ form.descripcion(class="form-input", rows=3) }}
+                {% if form.descripcion.errors %}
+                    <span class="text-error">{{ form.descripcion.errors[0] }}</span>
+                {% endif %}
+            </label>
+
+            <!-- SUELDO -->
+            <label>
+                <span>{{ form.sueldo.label.text }}</span>
+                {{ form.sueldo(class="form-input") }}
+                {% if form.sueldo.errors %}
+                    <span class="text-error">{{ form.sueldo.errors[0] }}</span>
+                {% endif %}
+            </label>
+
+            <!-- ESTATUS SOLO EDITAR -->
+            {% if action == "Editar" %}
+            <label>
+                <span>{{ form.estatus.label.text }}</span>
+                {{ form.estatus(class="form-input") }}
+                {% if form.estatus.errors %}
+                    <span class="text-error">{{ form.estatus.errors[0] }}</span>
+                {% endif %}
+            </label>
+            {% endif %}
+
+        </div>
+
+        <!-- BOTONES -->
+        <div class="button-row" style="margin-top: 20px;">
+
+            <a href="{{ url_for(endpoint ~ '.inicio') }}"
+               class="btn btn-outline">
+                Cancelar
+            </a>
+
+            {{ form.submit(class="btn btn-primary") }}
+
+        </div>
+
+    </form>
+
+</div>
+
+{% endblock %}

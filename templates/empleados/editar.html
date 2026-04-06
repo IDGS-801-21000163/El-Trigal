@@ -1,3 +1,169 @@
-{% extends "internal_layout.html" %}
-{% set action_label = "Editar" %}
-{% block module_content %}{% include "_module_form_content.html" %}{% endblock %}
+{% extends "layout.html" %}
+
+{% block page_title %}
+    {{ action_label }} {{ module['name'] }}
+{% endblock %}
+
+{% block card_title %}
+    Formulario de {{ module['name'] }}
+{% endblock %}
+
+{% block content %}
+
+{% set endpoint = module['slug']|replace('-', '_') %}
+
+<form method="POST" enctype="multipart/form-data" class="form-container">
+
+    {{ form.hidden_tag() }}
+
+    <!-- DATOS PERSONALES -->
+    <h3 class="form-section-title">Datos personales</h3>
+
+    <div class="form-grid">
+        {% for field in [form.nombre, form.apellido_uno, form.apellido_dos, form.telefono, form.correo] %}
+        <label class="form-group">
+            <span>{{ field.label.text }}</span>
+            {{ field(class="form-input") }}
+
+            {% if field.errors %}
+            <span class="form-error">{{ field.errors[0] }}</span>
+            {% endif %}
+        </label>
+        {% endfor %}
+    </div>
+
+    <!-- DIRECCIÓN -->
+    <h3 class="form-section-title">Dirección</h3>
+
+    <div class="form-grid">
+
+        <label class="form-group">
+            <span>{{ form.fk_estado.label.text }}</span>
+            {{ form.fk_estado(class="form-input") }}
+        </label>
+
+        <label class="form-group">
+            <span>{{ form.fk_municipio.label.text }}</span>
+            {{ form.fk_municipio(class="form-input") }}
+        </label>
+
+        {% for field in [form.calle, form.colonia, form.codigo_postal, form.num_exterior, form.num_interior] %}
+        <label class="form-group">
+            <span>{{ field.label.text }}</span>
+            {{ field(class="form-input") }}
+
+            {% if field.errors %}
+            <span class="form-error">{{ field.errors[0] }}</span>
+            {% endif %}
+        </label>
+        {% endfor %}
+
+    </div>
+
+    <!-- DATOS DEL EMPLEADO -->
+    <h3 class="form-section-title">Datos del empleado</h3>
+
+    <div class="form-grid">
+
+        <label class="form-group">
+            <span>{{ form.num_empleado.label.text }}</span>
+            {{ form.num_empleado(class="form-input") }}
+        </label>
+
+        <label class="form-group">
+            <span>{{ form.fk_puesto.label.text }}</span>
+            {{ form.fk_puesto(class="form-input") }}
+        </label>
+
+        <label class="form-group">
+            <span>{{ form.fecha_contratacion.label.text }}</span>
+            {{ form.fecha_contratacion(class="form-input") }}
+        </label>
+
+        <!-- IMAGEN -->
+        <label class="form-group">
+            <span>{{ form.imagen.label.text }}</span>
+            {{ form.imagen(class="form-input", accept="image/jpg,image/jpeg,image/png") }}
+        </label>
+
+    </div>
+
+    <!-- BOTONES -->
+    <div class="button-row">
+
+        <button class="btn btn-primary" type="submit">
+            {{ action_label }}
+        </button>
+
+        <a class="btn btn-outline" href="{{ url_for(endpoint ~ '.inicio') }}">
+            Volver
+        </a>
+
+    </div>
+
+</form>
+
+<!-- ALERTA -->
+{% if session.get('alert_user') and session.get('alert_password') %}
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+Swal.fire({
+    title: 'Empleado agregado!',
+    html: `
+        Usuario: <b>{{ session.pop('alert_user') }}</b><br>
+        Contraseña: <b>{{ session.pop('alert_password') }}</b>
+    `,
+    icon: 'success'
+});
+</script>
+{% endif %}
+
+<!-- AJAX MUNICIPIOS -->
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+    const estado = document.getElementById("fk_estado")
+    const municipio = document.getElementById("fk_municipio")
+
+    if (!estado) return
+
+    estado.addEventListener("change", function () {
+
+        fetch(`/empleados/municipios/${this.value}`)
+            .then(r => r.json())
+            .then(data => {
+
+                municipio.innerHTML = '<option value="">Seleccione municipio</option>'
+
+                data.municipios.forEach(m => {
+                    const option = document.createElement("option")
+                    option.value = m.id
+                    option.textContent = m.nombre
+                    municipio.appendChild(option)
+                })
+
+            })
+
+    })
+
+})
+</script>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+    const soloNumeros = ["telefono", "codigo_postal", "num_exterior", "num_interior"]
+    soloNumeros.forEach(id => {
+        const el = document.getElementById(id)
+        if (!el) return
+        el.addEventListener("keypress", (e) => {
+            if (!/[0-9]/.test(e.key)) e.preventDefault()
+        })
+        el.addEventListener("paste", (e) => {
+            const texto = e.clipboardData.getData("text")
+            if (!/^\d+$/.test(texto)) e.preventDefault()
+        })
+    })
+})
+</script>
+
+{% endblock %}

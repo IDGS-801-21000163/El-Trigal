@@ -1,2 +1,133 @@
-{% extends "internal_layout.html" %}
-{% block module_content %}{% include "_module_detail_content.html" %}{% endblock %}
+{% extends "layout.html" %}
+
+{% block page_title %}
+    Detalle de empleado
+{% endblock %}
+
+{% block card_title %}
+    Información del empleado
+{% endblock %}
+
+{% block content %}
+
+{% set endpoint = module['slug']|replace('-', '_') %}
+
+<div class="detail-container">
+
+    <!-- ── PERFIL ── -->
+    <div class="detail-header">
+
+        {% if empleado.persona.foto and empleado.persona.foto.startswith('data:image') %}
+    <img src="{{ empleado.persona.foto }}" class="avatar-img">
+{% else %}
+    <div class="avatar">
+        {{ empleado.persona.nombre[0] }}
+    </div>
+{% endif %}
+
+        <div>
+            <h2 class="detail-name">
+                {{ empleado.persona.nombre }} {{ empleado.persona.apellido_uno }}
+            </h2>
+
+            <span class="detail-role">
+                {{ empleado.puesto.nombre if empleado.puesto else 'Sin puesto' }}
+            </span>
+        </div>
+
+    </div>
+
+    <!-- ── INFO ── -->
+    <div class="detail-grid">
+
+        <div class="detail-item">
+            <span>Número empleado</span>
+            <strong>{{ empleado.num_empleado }}</strong>
+        </div>
+
+        <div class="detail-item">
+            <span>Usuario</span>
+            <strong>{{ empleado.persona.usuario.nick if empleado.persona.usuario else 'Sin usuario' }}</strong>
+        </div>
+
+        <div class="detail-item">
+            <span>Fecha contratación</span>
+            <strong>
+                {{ empleado.fecha_contratacion.strftime('%Y-%m-%d') if empleado.fecha_contratacion else '-' }}
+            </strong>
+        </div>
+
+        <div class="detail-item">
+            <span>Estatus</span>
+            <strong class="{{ 'status-active' if empleado.estatus == 'ACTIVO' else 'status-inactive' }}">
+                {{ empleado.estatus }}
+            </strong>
+        </div>
+
+    </div>
+
+    <!-- ── ACCIONES ── -->
+    <div class="button-row">
+
+        <a class="btn btn-outline"
+           href="{{ url_for(endpoint ~ '.inicio') }}">
+            Volver
+        </a>
+
+        <a class="btn btn-primary btn-toggle"
+           data-url ="{{ url_for(endpoint ~ '.eliminar', id=empleado.id) }}">
+            Eliminar
+        </a>
+
+    </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+{% if temp_user and temp_password %}
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+Swal.fire({
+    title: '¡Empleado registrado!',
+    html: `
+        <p>El empleado ha sido registrado correctamente.</p>
+        <br>
+        <b>Usuario:</b> {{ temp_user }}<br>
+        <b>Contraseña:</b> {{ temp_password }}
+    `,
+    icon: 'success',
+    confirmButtonText: 'Entendido'
+});
+</script>
+{% endif %}
+
+<script>
+document.querySelectorAll(".btn-toggle").forEach(btn => {
+
+    btn.addEventListener("click", (e) => {
+        e.preventDefault()
+
+        const url = btn.dataset.url
+
+        Swal.fire({
+            title: "¿Seguro que deseas eliminar?",
+            text: "Esta acción no se puede deshacer",
+            icon: "warning",
+            showCancelButton: true,
+            confirmButtonColor: "#c89b3c",
+            cancelButtonColor: "#6b7280",
+            confirmButtonText: "Sí, eliminar",
+            cancelButtonText: "Cancelar"
+        }).then((result) => {
+            if (result.isConfirmed) {
+                window.location.href = url
+            }
+        })
+
+    })
+
+})
+</script>
+
+{% endblock %}

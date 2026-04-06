@@ -1,2 +1,178 @@
-{% extends "internal_layout.html" %}
-{% block module_content %}{% include "_module_inicio_content.html" %}{% endblock %}
+{% extends "layout.html" %}
+
+{% block page_title %}
+    {{ module['name'] }}
+{% endblock %}
+
+{% block card_title %}
+    Gestión de {{ module['name'] }}
+{% endblock %}
+
+{% block content %}
+
+{% set endpoint = module['slug']|replace('-', '_') %}
+
+<div class="toolbar">
+
+    <input type="text" id="searchInput" placeholder="Buscar puestos..." class="input-search">
+
+    <a href="{{ url_for(endpoint ~ '.agregar') }}" class="btn btn-primary">
+        + Nuevo
+    </a>
+
+</div>
+
+<section class="module-grid">
+
+    {% for item in module['items'] %}
+    
+    <article class="employee-card searchable" 
+    data-nombre="{{ item.nombre }}">
+
+        <!-- ICONO -->
+        <div style="display:flex; justify-content:center;">
+            <div class="puesto-icon">
+                💼
+            </div>
+        </div>
+
+        <!-- INFO -->
+        <div style="text-align:center;">
+            <h2 class="employee-name">
+                {{ item.nombre }}
+            </h2>
+
+            <p class="employee-role">
+                {{ item.descripcion[:60] }}{% if item.descripcion|length > 60 %}...{% endif %}
+            </p>
+        </div>
+
+        <!-- SUELDO -->
+        <div style="text-align:center;">
+            <span class="puesto-sueldo">
+                ${{ "%.2f"|format(item.sueldo) }}
+            </span>
+        </div>
+
+        <!-- ESTATUS -->
+        <div style="display:flex; justify-content:center;">
+            <span class="status-badge {{ 'active' if item.estatus == 'ACTIVO' else 'inactive' }}">
+                {{ item.estatus }}
+            </span>
+        </div>
+
+        <!-- ACCIONES -->
+        <div class="employee-actions">
+
+            <a href="{{ url_for(endpoint ~ '.editar', id=item.id) }}"
+               class="btn btn-outline">
+                Editar
+            </a>
+
+            <a href="#"
+   class="btn btn-primary btn-toggle"
+   data-url="{{ url_for(endpoint ~ '.eliminar', id=item.id) }}"
+   data-estado="{{ item.estatus }}">
+   
+   {{ 'Desactivar' if item.estatus == 'ACTIVO' else 'Activar' }}
+</a>
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+
+    const botones = document.querySelectorAll(".btn-toggle")
+
+    botones.forEach(btn => {
+
+        btn.addEventListener("click", (e) => {
+            e.preventDefault()
+
+            const url = btn.dataset.url
+            const estado = btn.dataset.estado
+
+            const accion = estado === "ACTIVO" ? "desactivar" : "activar"
+
+            Swal.fire({
+                title: `¿Seguro que deseas ${accion}?`,
+                text: "Puedes revertir esta acción después",
+                icon: "warning",
+                showCancelButton: true,
+                confirmButtonColor: "#c89b3c",
+                cancelButtonColor: "#6b7280",
+                confirmButtonText: "Sí, continuar",
+                cancelButtonText: "Cancelar"
+            }).then((result) => {
+
+                if (result.isConfirmed) {
+                    window.location.href = url
+                }
+
+            })
+
+        })
+
+    })
+
+})
+</script>
+
+        </div>
+
+    </article>
+
+    {% endfor %}
+
+</section>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+
+    const input = document.getElementById("searchInput")
+    const cards = document.querySelectorAll(".searchable")
+
+    input.addEventListener("input", () => {
+
+        const texto = input.value.toLowerCase()
+
+        cards.forEach(card => {
+
+            const nombre = card.dataset.nombre.toLowerCase()
+
+            const coincide =
+                nombre.includes(texto)
+
+            card.style.display = coincide ? "block" : "none"
+
+        })
+
+    })
+
+})
+</script>
+
+{% with mensajes = get_flashed_messages(with_categories=True) %}
+{% if mensajes %}
+    <div id="flash-data" data-messages='{{ mensajes | tojson }}'></div>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+    document.addEventListener("DOMContentLoaded", () => {
+        const el = document.getElementById("flash-data")
+        if (!el) return
+        const mensajes = JSON.parse(el.dataset.messages || "[]")
+        mensajes.forEach(([category, message]) => {
+            Swal.fire({
+                title: "¡Listo!",
+                text: message,
+                icon: category === "success" ? "success" : "warning",
+                timer: 2500,
+                showConfirmButton: false
+            })
+        })
+    })
+    </script>
+{% endif %}
+{% endwith %}
+
+{% endblock %}

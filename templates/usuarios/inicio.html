@@ -1,2 +1,91 @@
-{% extends "internal_layout.html" %}
-{% block module_content %}{% include "_module_inicio_content.html" %}{% endblock %}
+{% extends "layout.html" %}
+
+{% block page_title %}
+    Usuarios
+{% endblock %}
+
+{% block card_title %}
+    Gestión de usuarios
+{% endblock %}
+
+{% block content %}
+
+{% set endpoint = module['slug']|replace('-', '_') %}
+
+<!-- ── GRID ── -->
+<section class="module-grid">
+
+    {% for item in module['items'] %}
+    
+    <article class="employee-card">
+
+        <!-- HEADER -->
+        <div class="employee-header">
+{% set persona = item.persona if item.persona and not item.persona is iterable else (item.persona[0] if item.persona else none) %}
+
+{% if persona and persona.foto %}
+    <img src="{{ persona.foto }}" class="avatar-img">
+{% else %}
+    <div class="avatar">
+        {{ item.nick[0] }}
+    </div>
+{% endif %}
+
+            <div class="employee-main">
+                <h2 class="employee-name">
+                    {{ item.nick }}
+                </h2>
+
+                <p class="employee-role">
+                    {{ item.rol.nombre }}
+                </p>
+            </div>
+
+        </div>
+
+        <!-- BODY -->
+        <div class="employee-body">
+
+        <div class="employee-meta">
+    <span>Nombre:</span>
+    {{ item.persona.nombre ~ ' ' ~ item.persona.apellido_uno if item.persona else 'Sin empleado' }}
+</div>
+
+        </div>
+
+        <!-- FOOTER -->
+        <div class="employee-actions">
+
+            <a href="{{ url_for(endpoint ~ '.detalle', id=item.id) }}" class="btn btn-primary">
+                Editar Rol 
+            </a>
+        </div>
+    </article>
+
+    {% endfor %}
+
+</section>
+
+{% with mensajes = get_flashed_messages(with_categories=True) %}
+{% if mensajes %}
+    <div id="flash-data" data-messages='{{ mensajes | tojson }}'></div>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+    document.addEventListener("DOMContentLoaded", () => {
+        const el = document.getElementById("flash-data")
+        if (!el) return
+        const mensajes = JSON.parse(el.dataset.messages || "[]")
+        mensajes.forEach(([category, message]) => {
+            Swal.fire({
+                title: "¡Listo!",
+                text: message,
+                icon: category === "success" ? "success" : "warning",
+                timer: 2500,
+                showConfirmButton: false
+            })
+        })
+    })
+    </script>
+{% endif %}
+{% endwith %}
+{% endblock %}

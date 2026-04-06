@@ -20,8 +20,7 @@
         <input id="contrasena" name="contrasena" type="password" placeholder="Contrasena" autocomplete="current-password">
 
         <a class="auth-link" href="{{ url_for('recuperar') }}">¿Olvidaste tu contrasena?</a>
-
-        <button class="primary-button" type="submit">Entrar</button>
+        <a class="secondary-button" href="{{ url_for('inventario_productos.inicio') }}">Entrar</a>
         <a class="secondary-button" href="{{ url_for('registro') }}">Registrarme</a>
     </form>
 </section>

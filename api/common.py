@@ -223,6 +223,19 @@ MODULES = [
             {"title": "Carlos Ruiz", "subtitle": "Mayoreo", "meta": "Activo"},
         ],
     },
+        {
+        "slug": "costo-producto",
+        "name": "Categoria de Costo de producto",
+        "description": "Visualizacion de los costos asociados a cada producto.",
+        "search_placeholder": "Buscar producto...",
+        "filter_label": "Todas las categorias",
+        "fields": ["Nombre", "Descripcion", "Estatus", "Observaciones"],
+        "columns": ["ID", "Categoria", "Descripcion", "Estatus"],
+        "items": [
+            {"title": "Harinas", "subtitle": "Base seca", "meta": "Activa"},
+            {"title": "Lacteos", "subtitle": "Caducidad corta", "meta": "Activa"},
+        ],
+    },
 ]
 
 MODULE_MAP = {module["slug"]: module for module in MODULES}

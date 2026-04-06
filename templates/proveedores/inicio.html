@@ -1,2 +1,147 @@
-{% extends "internal_layout.html" %}
-{% block module_content %}{% include "_module_inicio_content.html" %}{% endblock %}
+{% extends "layout.html" %}
+
+{% block page_title %}
+    {{ module['name'] }}
+{% endblock %}
+
+{% block card_title %}
+    Gestión de {{ module['name'] }}
+{% endblock %}
+
+{% block content %}
+
+{% set endpoint = module['slug']|replace('-', '_') %}
+
+<div class="toolbar">
+
+    <input type="text" id="searchInput" placeholder="Buscar proveedor..." class="input-search">
+
+    <a href="{{ url_for(endpoint ~ '.agregar') }}" class="btn btn-primary">
+        + Nuevo
+    </a>
+
+</div>
+
+<section class="module-grid">
+
+    {% for proveedor in module['items'] %}
+    
+    <article class="employee-card searchable"
+        data-nombre="{{ proveedor.nombre_comercial }}"
+        data-razon="{{ proveedor.razon_social or '' }}">
+
+        <!-- HEADER -->
+        <div class="employee-header">
+
+            <div class="employee-main">
+                <h2 class="employee-name">
+                    {{ proveedor.nombre_comercial }}
+                </h2>
+
+                <p class="employee-role">
+                    {{ proveedor.razon_social or 'Sin razón social' }}
+                </p>
+            </div>
+
+            <span class="status {{ 'active' if proveedor.estatus == 'ACTIVO' else 'inactive' }}"></span>
+        </div>
+
+        <!-- BODY -->
+        <div class="employee-body">
+
+            <div class="employee-meta">
+                <span>Tel:</span> {{ proveedor.telefono or '-' }}
+            </div>
+
+            <div class="employee-meta">
+                <span>Correo:</span> {{ proveedor.correo or '-' }}
+            </div>
+
+        </div>
+
+        <!-- FOOTER -->
+        <div class="employee-actions">
+
+            <a href="{{ url_for(endpoint ~ '.editar', id=proveedor.id) }}"
+               class="btn btn-outline">
+                Editar
+            </a>
+
+            <a href="#"
+               class="btn btn-primary btn-toggle"
+               data-url="{{ url_for(endpoint ~ '.eliminar', id=proveedor.id) }}">
+               Eliminar
+            </a>
+
+        </div>
+
+    </article>
+
+    {% else %}
+        <p class="empty-state">No hay proveedores registrados.</p>
+    {% endfor %}
+
+</section>
+
+<!-- 🔍 BUSCADOR -->
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+
+    const input = document.getElementById("searchInput")
+    const cards = document.querySelectorAll(".searchable")
+
+    input.addEventListener("input", () => {
+
+        const texto = input.value.toLowerCase()
+
+        cards.forEach(card => {
+
+            const nombre = (card.dataset.nombre || "").toLowerCase()
+            const razon = (card.dataset.razon || "").toLowerCase()
+
+            const coincide =
+                nombre.includes(texto) ||
+                razon.includes(texto)
+
+            card.style.display = coincide ? "flex" : "none"
+
+        })
+
+    })
+
+})
+</script>
+
+<!-- ⚠️ CONFIRMACIÓN -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<script>
+document.querySelectorAll(".btn-toggle").forEach(btn => {
+
+    btn.addEventListener("click", (e) => {
+        e.preventDefault()
+
+        const url = btn.dataset.url
+        const estado = btn.dataset.estado
+        const accion = "Eliminar"
+
+        Swal.fire({
+            title: `¿Seguro que deseas ${accion}?`,
+            icon: "error",
+            showCancelButton: true,
+            confirmButtonColor: "#c89b3c",
+            cancelButtonColor: "#6b7280",
+            confirmButtonText: "Sí",
+            cancelButtonText: "Cancelar"
+        }).then((result) => {
+            if (result.isConfirmed) {
+                window.location.href = url
+            }
+        })
+
+    })
+
+})
+</script>
+
+{% endblock %}

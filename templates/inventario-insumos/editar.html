@@ -1,3 +1,112 @@
-{% extends "internal_layout.html" %}
-{% set action_label = "Editar" %}
-{% block module_content %}{% include "_module_form_content.html" %}{% endblock %}
+{% extends "layout.html" %}
+
+{% block page_title %}
+    {{ action_label }} {{ module['name'] }}
+{% endblock %}
+
+{% block card_title %}
+    Ajustar cantidad de insumo
+{% endblock %}
+
+{% block content %}
+
+{% set endpoint = module['slug']|replace('-', '_') %}
+
+<form method="POST" class="form-container">
+
+    {{ form.hidden_tag() }}
+
+    <!-- INFO DEL INSUMO -->
+    <div style="display:flex; gap:20px; align-items:center; flex-wrap:wrap; margin-bottom:24px; padding:16px; background:var(--bg-soft, #fdf8f3); border-radius:12px; border:1px solid var(--border, #e5e7eb);">
+
+        <!-- IMAGEN -->
+        <div style="width:100px; height:100px; border-radius:10px; overflow:hidden; background:#f3f4f6; display:flex; align-items:center; justify-content:center; font-size:2.5rem; flex-shrink:0;">
+            {% if inventario.insumo.foto %}
+                <img src="data:image/png;base64,{{ inventario.insumo.foto }}"
+                     style="width:100%; height:100%; object-fit:cover;">
+            {% else %}
+                🧂
+            {% endif %}
+        </div>
+
+        <!-- DATOS -->
+        <div style="display:flex; flex-direction:column; gap:4px; font-size:0.875rem; color:var(--text-muted, #6b7280);">
+
+            <p style="font-weight:700; font-size:1.1rem; color:var(--text, #1f2937); margin:0;">
+                {{ inventario.insumo.nombre }}
+            </p>
+
+            <p style="margin:0;">
+                Categoría: <strong>{{ inventario.insumo.categoria.nombre }}</strong>
+            </p>
+
+            <p style="margin:0;">
+                Stock actual: 
+                <strong>{{ inventario.cantidad }} {{ inventario.unidad.nombre if inventario.unidad else '' }}</strong>
+            </p>
+
+            {% if inventario.fecha_caducidad %}
+            <p style="margin:0;">
+                Caduca: <strong>{{ inventario.fecha_caducidad.strftime('%d/%m/%Y') }}</strong>
+            </p>
+            {% endif %}
+
+            <p style="margin:0;">
+                Sucursal: <strong>{{ inventario.sucursal.nombre }}</strong>
+            </p>
+
+            <p style="margin:0;">
+                Estatus:
+                <span style="font-weight:600;">
+                    {{ inventario.estatus }}
+                </span>
+            </p>
+
+        </div>
+
+    </div>
+
+    <!-- AJUSTE -->
+    <h3 class="form-section-title">Ajuste de cantidad</h3>
+
+    <div class="form-grid">
+
+        <label class="form-group">
+            <span>{{ form.tipo_movimiento.label.text }}</span>
+            {{ form.tipo_movimiento(class="form-input") }}
+            {% if form.tipo_movimiento.errors %}
+            <span class="form-error">{{ form.tipo_movimiento.errors[0] }}</span>
+            {% endif %}
+        </label>
+
+        <label class="form-group">
+            <span>{{ form.cantidad.label.text }}</span>
+            {{ form.cantidad(class="form-input") }}
+            {% if form.cantidad.errors %}
+            <span class="form-error">{{ form.cantidad.errors[0] }}</span>
+            {% endif %}
+        </label>
+
+        <label class="form-group" style="grid-column: 1 / -1;">
+            <span>{{ form.motivo.label.text }}</span>
+            {{ form.motivo(class="form-input", rows=3) }}
+            {% if form.motivo.errors %}
+            <span class="form-error">{{ form.motivo.errors[0] }}</span>
+            {% endif %}
+        </label>
+
+    </div>
+
+    <!-- BOTONES -->
+    <div class="button-row">
+        <button class="btn btn-primary" type="submit">
+            {{ action_label }}
+        </button>
+        <a class="btn btn-outline" href="{{ url_for(endpoint ~ '.inicio') }}">
+            Volver
+        </a>
+    </div>
+
+</form>
+
+{% endblock %}

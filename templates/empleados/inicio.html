@@ -1,2 +1,125 @@
-{% extends "internal_layout.html" %}
-{% block module_content %}{% include "_module_inicio_content.html" %}{% endblock %}
+{% extends "layout.html" %}
+
+{% block page_title %}
+    Empleados
+{% endblock %}
+
+{% block card_title %}
+    Gestión de empleados
+{% endblock %}
+
+{% block content %}
+
+{% set endpoint = module['slug']|replace('-', '_') %}
+
+<!-- ── ACCIONES SUPERIORES ── -->
+<div class="toolbar">
+
+    <input type="text" id="searchInput" placeholder="Buscar empleado..." class="input-search">
+
+    <a href="{{ url_for(endpoint ~ '.agregar') }}" class="btn btn-primary">
+        + Nuevo
+    </a>
+
+</div>
+
+<!-- ── GRID ── -->
+<section class="module-grid">
+
+    {% for item in module['items'] %}
+    
+    <article class="employee-card searchable"
+    data-nombre="{{ item.persona.nombre }} {{ item.persona.apellido_uno }}"
+    data-puesto="{{ item.puesto.nombre if item.puesto else '' }}"
+    data-usuario="{{ item.usuario.nick if item.usuario else '' }}">
+
+        <!-- HEADER -->
+        <div class="employee-header">
+    
+    {% if item.persona.foto %}
+        <img src="{{ item.persona.foto }}" class="avatar-img">
+    {% else %}
+        <div class="avatar">
+            {{ item.persona.nombre[0] }}
+        </div>
+    {% endif %}
+
+            <div class="employee-main">
+                <h2 class="employee-name">
+                    {{ item.persona.nombre }} {{ item.persona.apellido_uno }}
+                </h2>
+
+                <p class="employee-role">
+                    {{ item.puesto.nombre if item.puesto else 'Sin puesto' }}
+                </p>
+            </div>
+
+            <span class="status active"></span>
+        </div>
+
+        <!-- BODY -->
+        <div class="employee-body">
+
+            <div class="employee-meta">
+                <span>ID:</span> {{ item.num_empleado }}
+            </div>
+
+            <div class="employee-meta">
+    <span>Usuario:</span>
+    {{ item.persona.usuario.nick if item.persona and item.persona.usuario else 'Sin usuario' }}
+</div>
+
+            <div class="employee-meta">
+                {{ item.estatus}}
+            </div>
+            
+        </div>
+
+        <!-- FOOTER -->
+        <div class="employee-actions">
+            <a href="{{ url_for(endpoint ~ '.detalle', id=item.id) }}" class="btn btn-outline">
+                Ver
+            </a>
+
+            <a href="{{ url_for(endpoint ~ '.editar', id=item.id) }}" class="btn btn-primary">
+                Editar
+            </a>
+        </div>
+
+    </article>
+
+    {% endfor %}
+
+</section>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+
+    const input = document.getElementById("searchInput")
+    const cards = document.querySelectorAll(".searchable")
+
+    input.addEventListener("input", () => {
+
+        const texto = input.value.toLowerCase()
+
+        cards.forEach(card => {
+
+            const nombre = card.dataset.nombre.toLowerCase()
+            const puesto = card.dataset.puesto.toLowerCase()
+            const usuario = card.dataset.usuario.toLowerCase()
+
+            const coincide =
+                nombre.includes(texto) ||
+                puesto.includes(texto) ||
+                usuario.includes(texto)
+
+            card.style.display = coincide ? "block" : "none"
+
+        })
+
+    })
+
+})
+</script>
+
+{% endblock %}

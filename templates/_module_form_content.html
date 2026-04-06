@@ -1,20 +1,5 @@
-<section class="form-panel">
-    <div class="form-panel__copy">
-        <h2>{{ action_label }} {{ module['name'] }}</h2>
-        <p>Vista maquetada segun los requerimientos funcionales del modulo.</p>
-    </div>
+{% set endpoint = module['slug']|replace('-', '_') %}
 
-    <div class="form-grid">
-        {% for field in module['fields'] %}
-            <label>
-                <span>{{ field }}</span>
-                <input type="text" placeholder="{{ field }}">
-            </label>
-        {% endfor %}
-    </div>
-
-    <div class="button-row">
-        <button class="solid-button" type="button">{{ action_label }}</button>
-        <a class="outline-button" href="{{ url_for(module['slug']|replace('-', '_') ~ '.inicio') }}">Volver</a>
-    </div>
+<section class="module-grid grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+    {% block module_items %}{% endblock %}
 </section>

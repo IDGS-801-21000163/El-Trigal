@@ -1,0 +1,119 @@
+{% extends "layout.html" %}
+
+{% block page_title %}
+    Costo por producto
+{% endblock %}
+
+{% block card_title %}
+    Costo y utilidad por producto
+{% endblock %}
+
+{% block content %}
+
+{% set endpoint = "costo_producto" %}
+
+<!-- TOOLBAR -->
+<div class="toolbar">
+    <input type="text" id="searchInput" placeholder="Buscar producto..." class="input-search">
+
+    <select id="filtroCategoria" class="form-input" style="max-width:200px;">
+        <option value="">Todas las categorías</option>
+        {% for categoria in categorias %}
+        <option value="{{ categoria.nombre }}">{{ categoria.nombre }}</option>
+        {% endfor %}
+    </select>
+</div>
+
+<!-- GRID -->
+<section class="module-grid">
+
+    {% for item in productos %}
+    <article class="employee-card searchable"
+        data-nombre="{{ item.nombre }}"
+        data-categoria="{{ item.categoria.nombre }}">
+
+        <!-- FOTO -->
+        <div style="display:flex; justify-content:center; margin-bottom:8px;">
+            {% if item.foto %}
+                <img src="{{ item.foto }}" style="width:100px; height:100px; object-fit:cover; border-radius:10px;">
+            {% else %}
+                <div style="width:100px; height:100px; border-radius:10px; background:#f3f4f6; display:flex; align-items:center; justify-content:center; font-size:2rem;">
+                    🍞
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- INFO -->
+        <div style="text-align:center;">
+            <h2 class="employee-name">{{ item.nombre }}</h2>
+            <p class="employee-role">{{ item.categoria.nombre }}</p>
+        </div>
+
+        <!-- COSTOS -->
+        <div class="employee-body">
+            <div class="employee-meta">
+                <span>Costo de producción:</span>
+                ${{ item.costo_produccion }}
+            </div>
+            <div class="employee-meta">
+                <span>Precio de venta:</span>
+                ${{ item.precio }}
+            </div>
+            <div class="employee-meta">
+                <span>Utilidad:</span>
+                ${{ (item.precio - item.costo_produccion) | round(2) }}
+            </div>
+            <div class="employee-meta">
+                <span>Margen de ganancia:</span>
+                {% if item.precio > 0 %}
+                    {{ ((item.precio - item.costo_produccion) / item.precio * 100) | round(1) }}%
+                {% else %}
+                    0%
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- ACCIONES -->
+        <div class="employee-actions">
+            <a href="{{ url_for(endpoint ~ '.detalle', id=item.id) }}" class="btn btn-outline">
+                Detalle
+            </a>
+        </div>
+
+    </article>
+    {% else %}
+    <p style="text-align:center; width:100%;">No hay productos registrados</p>
+    {% endfor %}
+
+</section>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+
+    const input    = document.getElementById("searchInput")
+    const filtro   = document.getElementById("filtroCategoria")
+    const cards    = document.querySelectorAll(".searchable")
+
+    function filtrar() {
+        const texto    = input.value.toLowerCase()
+        const categoria = filtro.value.toLowerCase()
+
+        cards.forEach(card => {
+            const nombre    = card.dataset.nombre.toLowerCase()
+            const cat       = card.dataset.categoria.toLowerCase()
+
+            const coincide =
+                nombre.includes(texto) &&
+                (categoria === "" || cat === categoria)
+
+            card.style.display = coincide ? "block" : "none"
+        })
+    }
+
+    input.addEventListener("input", filtrar)
+    filtro.addEventListener("change", filtrar)
+
+})
+</script>
+
+{% endblock %}
