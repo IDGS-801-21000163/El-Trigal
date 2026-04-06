@@ -1,12 +1,9 @@
-{% extends "layout2.html" %}
-{% from "macros/forms.html" import render_input, render_image_input, render_flash %}
-
+{% extends "layout2.html" %} 
 {% block page_title %}Clientes{% endblock %}
-{% block card_title %}Editar cliente{% endblock %}
+{% block card_title %}Agregar cliente{% endblock %}
+{% from "macros/forms.html" import render_input %}
 
 {% block content %}
-
-{{ render_flash() }}
 
 <form method="POST" enctype="multipart/form-data" class="grid grid-cols-2 gap-4">
 
@@ -15,15 +12,16 @@
     {{ render_input(form.nombre) }}
     {{ render_input(form.apellido_paterno) }}
     {{ render_input(form.apellido_materno) }}
+
     {{ render_input(form.telefono) }}
     {{ render_input(form.correo, "col-span-2") }}
 
     <div class="col-span-2">
-        {{ render_image_input(form.foto, imagen) }}
+        {{ render_input(form.foto) }}
     </div>
 
-    <div class="col-span-2 flex gap-3">
-        <button class="btn btn-primary">Actualizar</button>
+    <div class="col-span-2">
+        <button class="btn btn-primary">Guardar</button>
         <a href="{{ url_for('clientes.inicio') }}" class="btn btn-outline">Regresar</a>
     </div>
 

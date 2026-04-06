@@ -3,6 +3,7 @@ from api.common import create_module_blueprint
 from models import db, Produccion, ProduccionDetalle, Producto, Receta, RecetaDetalle, InventarioProducto, SolicitudProduccion
 from sqlalchemy import func
 from datetime import datetime
+from forms import TerminarProduccionForm, CancelarProduccionForm, NuevaProduccionForm
 
 produccion = create_module_blueprint("produccion")
 
@@ -142,10 +143,21 @@ def terminar(id):
     if request.method == "POST":
 
         piezas = int(request.form.get("piezas"))
+        merma = int(request.form.get("merma"))
+        fecha = request.form.get("fecha_caducidad")
 
+        # VALIDACIONES
+        if not fecha:
+            flash("La fecha de caducidad es obligatoria", "error")
+            return redirect(url_for("produccion.terminar", id=id))
+
+        fecha = datetime.fromisoformat(fecha)
+
+        # ACTUALIZAR PRODUCCIÓN
         detalle.cantidad_producto = piezas
         prod.estado = "TERMINADO"
 
+        # INVENTARIO
         inventario = InventarioProducto.query.filter_by(
             fk_producto=detalle.fk_producto,
             fk_sucursal=get_sucursal_id(),
@@ -159,6 +171,7 @@ def terminar(id):
                 fk_producto=detalle.fk_producto,
                 fk_sucursal=get_sucursal_id(),
                 cantidad_producto=piezas,
+                fecha_caducidad=fecha,
                 estado="EXISTENCIA",
                 estatus="ACTIVO",
                 usuario_creacion=get_user_id(),
@@ -166,17 +179,18 @@ def terminar(id):
             )
             db.session.add(nuevo)
 
-        # ✅ Sincronizar M16 ANTES del commit
+        # 🔄 SINCRONIZAR M16
         if detalle.fk_solicitud:
             solicitud = SolicitudProduccion.query.get(detalle.fk_solicitud)
             if solicitud:
                 solicitud.estado = "TERMINADA"
 
-        db.session.commit()  # ← UN SOLO commit al final
+        db.session.commit()
 
-        flash("Producción terminada", "success")
+        flash("Producción terminada correctamente", "success")
         return redirect(url_for("produccion.inicio"))
 
+    
     return render_template("produccion/editar.html", produccion=prod)
 
 @produccion.route("/agregar", methods=["GET", "POST"])
@@ -198,7 +212,7 @@ def agregar():
             fk_empleado=get_empleado_id(),
             fk_sucursal=get_sucursal_id(),
             estado="PENDIENTE",
-            fecha_creacion=datetime.utcnow(),  # 🔥 AQUI
+            fecha_creacion=datetime.utcnow(),  
             usuario_creacion=get_user_id(),
             usuario_movimiento=get_user_id()
         )
@@ -212,8 +226,8 @@ def agregar():
             cantidad_solicitada=cantidad,
             cantidad_producto=0,
             origen="INTERNO",
-            usuario_creacion=get_user_id(),       # 🔥
-            usuario_movimiento=get_user_id()      # 🔥
+            usuario_creacion=get_user_id(),       
+            usuario_movimiento=get_user_id()      
         )
 
         db.session.add(detalle)
@@ -254,7 +268,7 @@ def cancelar(id):
     if detalle and detalle.fk_solicitud:
         solicitud = SolicitudProduccion.query.get(detalle.fk_solicitud)
         if solicitud:
-            solicitud.estado = "RECHAZADA"   # ← RECHAZADA según tu ENUM
+            solicitud.estado = "RECHAZADA" 
 
     db.session.commit()
 

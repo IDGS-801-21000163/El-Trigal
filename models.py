@@ -42,6 +42,7 @@ class CategoriaProducto(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     nombre = db.Column(db.String(65), nullable=False)
     descripcion = db.Column(db.Text, nullable=False)
+    foto = db.Column(db.LargeBinary)
     estatus = db.Column(db.Enum('ACTIVO', 'INACTIVO'), default='ACTIVO')
     fecha_creacion = db.Column(db.DateTime, default=datetime.utcnow)
     usuario_creacion = db.Column(db.Integer, db.ForeignKey('usuario.id'), nullable=False)
@@ -135,6 +136,8 @@ class Cliente(db.Model):
     usuario_creacion = db.Column(db.Integer, db.ForeignKey('usuario.id'), nullable=False)
     fecha_movimiento = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     usuario_movimiento = db.Column(db.Integer, db.ForeignKey('usuario.id'), nullable=False)
+    
+    persona = db.relationship('Persona')
 
 
 class Persona(db.Model):

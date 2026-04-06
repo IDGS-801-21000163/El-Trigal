@@ -1,17 +1,11 @@
-{% extends 'base.html' %}
+{% extends "layout2.html" %}
 
-{% block title %}Visualización de producción{% endblock %}
+{% block page_title %}Visualización de producción{% endblock %}
+{% block card_title %}Detalle de órdenes{% endblock %}
 
 {% block content %}
 
 <div class="flex justify-between items-center mb-6">
-    <h1 class="text-2xl font-bold text-[#6b4f3a]">Visualización de producción</h1>
-
-    <a href="{{ url_for('solicitud_produccion.inicio') }}"
-       class="bg-[#a67c52] text-white px-4 py-2 rounded-lg hover:bg-[#8d6846]">
-        Regresar
-    </a>
-</div>
 
 <!-- Filtros -->
 <form method="GET" class="flex gap-4 mb-6">
@@ -36,7 +30,13 @@
         Filtrar
     </button>
 
+    <a href="{{ url_for('solicitud_produccion.inicio') }}"
+       class="bg-[#a67c52] text-white px-4 py-2 rounded-lg hover:bg-[#8d6846]">
+        Regresar
+    </a>
+
 </form>
+</div>  
 
 <h2 class="text-lg font-semibold text-[#7a5d47] mb-4">
     Órdenes Activas

@@ -55,7 +55,7 @@ def inicio():
             'precio': float(producto.precio),
             'costo': float(producto.costo_produccion),
             'categoria': producto.categoria.nombre,
-            'imagen': f"data:image/png;base64,{base64.b64encode(producto.foto).decode('utf-8')}" if producto.foto else url_for('static', filename='img/placeholder.png'),
+            'imagen': f"data:image/png;base64,{base64.b64encode(producto.foto).decode('utf-8')}" if producto.foto else url_for('static', filename='img/defecto.png'),
             
             'tiene_inventario': tiene_inventario
         })
@@ -90,24 +90,27 @@ def agregar():
                 return redirect(url_for('productos.agregar'))
 
             
-            # Manejar la carga de imagen
-            foto = None
             if form.foto.data:
-                
                 try:
                     file = form.foto.data
+
                     file.seek(0, os.SEEK_END)
                     size = file.tell()
                     file.seek(0)
 
                     if size > 2 * 1024 * 1024:
                         flash("La imagen es muy grande (máx 2MB)", "error")
-                    filename = secure_filename(file.filename)
-                    # Guardar archivo temporalmente para luego convertir a bytes
+                        return redirect(url_for('productos.agregar'))
+
                     foto = file.read()
+
                 except Exception as e:
                     flash(f'Error al procesar la imagen: {str(e)}', 'error')
                     return redirect(url_for('productos.agregar'))
+
+            else:
+                with open('static/img/defecto.jpg', 'rb') as f:
+                    foto = f.read()
             
             # Crear nuevo producto
             nuevo_producto = Producto(
@@ -219,7 +222,7 @@ def editar(id):
         'categoria': producto.categoria.nombre,
         'imagen': f"data:image/png;base64,{base64.b64encode(producto.foto).decode('utf-8')}" if producto.foto else url_for('static', filename='img/placeholder.png')    }
     
-    return render_template('productos/editar.html', form=form, producto=producto_data)
+    return render_template('productos/editar.html', form=form, producto=producto_data,imagen=producto_data['imagen'])
 
 
 @productos.route('/eliminar/<int:id>', methods=['POST'])

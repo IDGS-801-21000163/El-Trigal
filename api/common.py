@@ -259,7 +259,7 @@ def create_module_blueprint(module_slug):
     blueprint = Blueprint(module_slug.replace("-", "_"), __name__, template_folder="../templates")
 
    
-    if module_slug not in ("productos", "categorias-productos", "inventario-productos", "solicitud-produccion","produccion"):
+    if module_slug not in ("productos", "categorias-productos", "inventario-productos", "solicitud-produccion","produccion", "clientes"):
 
         @blueprint.route("/")
         def inicio():

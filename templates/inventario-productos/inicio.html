@@ -1,155 +1,32 @@
-{% extends 'base.html' %}
+
+{% extends "layout2.html" %}
+{% from "macros/inventario.html" import render_alerta, render_card_inventario, render_modal_eliminar %}
+{% block page_title %}Inventario de productos{% endblock %}
+{% block card_title %}Gestión de inventario{% endblock %}
 {% block content %}
 
-<h1 class="text-2xl font-bold text-[#7a5d47] mb-6">
-    Inventario productos
-</h1>
 <!-- Buscador -->
-<div class="flex gap-4 mb-6">
-    <input type="text" id="buscador" placeholder="Buscar producto..."
-        class="px-4 py-2 rounded-lg w-1/3 border border-gray-300">
-</div>
-
-{% if hay_alerta %}
-<div class="bg-yellow-100 border border-yellow-300 text-yellow-800 p-4 rounded-lg mb-6">
-    ⚠️ Hay productos por caducar pronto
-</div>
-{% endif %}
-
-<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-
-{% for inv in inventarios %}
-<div class="inventario-item bg-white p-4 rounded-xl shadow-lg">
-
-    <!-- IMAGEN -->
-    <img src="{{ inv.imagen }}" class="w-full h-40 object-cover rounded-xl mb-3">
-
-    <!-- NOMBRE -->
-    <h2 class="nombre-producto text-lg font-bold text-[#9c775b]">{{ inv.producto_nombre }}</h2>
-
-    <!-- CATEGORIA -->
-    <p class="text-xs text-gray-600 mb-1">
-        {{ inv.categoria }}
-    </p>
-
-    <!-- DISPONIBLE -->
-    <p class="text-xs">
-        <span class="font-semibold">Disponible:</span> {{ inv.cantidad }}
-    </p>
-
-    <!-- CADUCIDAD -->
-    <p class="text-xs">
-        <span class="font-semibold">Caduca:</span> {{ inv.fecha_caducidad }}
-    </p>
-
-    <!-- ESTADO -->
-    <p class="mt-2 inline-block px-2 py-1 rounded-full text-[10px] font-semibold {{ inv.estado_color }}">
-        {{ inv.estado_display }}
-    </p>
-
-    <!-- BOTONES -->
-    <div class="flex gap-2 mt-3">
-
-        <a href="{{ url_for('inventario_productos.editar', id=inv.id) }}"
-           class="text-xs border px-3 py-1 rounded-lg">
-            Editar
-        </a>
-
-        {% if inv.cantidad > 0 %}
-        <button 
-            class="text-xs border border-gray-300 text-gray-400 px-3 py-1 rounded-lg cursor-not-allowed"
-            title="No puedes desactivar con stock disponible">
-            No permitido
-        </button>
-    {% else %}
-        <button onclick="abrirModal({{ inv.id }}, '{{ inv.producto_nombre }}')"
-            class="text-xs border border-red-500 text-red-500 px-3 py-1 rounded-lg">
-            Eliminar
-        </button>
-    {% endif %}
-
+    <div class="flex gap-4 mb-6">
+        <input type="text" id="buscador" placeholder="Buscar producto..."
+            class="px-4 py-2 rounded-lg w-1/3 border border-gray-300">
     </div>
 
-</div>
-{% endfor %}
-</div>
-
-<!-- PAGINACIÓN -->
-{% if pagination %}
-<div class="mt-8 flex justify-center gap-2">
-
-    {% if pagination.has_prev %}
-        <a href="{{ url_for('inventario_productos.inicio', page=pagination.prev_num) }}"
-           class="px-4 py-2 border rounded hover:bg-gray-100">
-            Anterior
-        </a>
+    {% if hay_alerta_roja %}
+        {{ render_alerta('roja', '🚨 PELIGRO: Hay productos caducados en inventario') }}
     {% endif %}
 
-    {% for page_num in pagination.iter_pages(left_edge=1, left_current=1, right_current=2, right_edge=1) %}
-        {% if page_num %}
-            {% if page_num == pagination.page %}
-                <span class="px-4 py-2 bg-[#a67c52] text-white rounded">
-                    {{ page_num }}
-                </span>
-            {% else %}
-                <a href="{{ url_for('inventario_productos.inicio', page=page_num) }}"
-                   class="px-4 py-2 border rounded hover:bg-gray-100">
-                    {{ page_num }}
-                </a>
-            {% endif %}
-        {% else %}
-            <span class="px-4 py-2">...</span>
-        {% endif %}
-    {% endfor %}
-
-    {% if pagination.has_next %}
-        <a href="{{ url_for('inventario_productos.inicio', page=pagination.next_num) }}"
-           class="px-4 py-2 border rounded hover:bg-gray-100">
-            Siguiente
-        </a>
+    {% if hay_alerta %}
+        {{ render_alerta('amarilla', '⚠️ ADVERTENCIA: Hay productos por caducar pronto') }}
     {% endif %}
 
-</div>
-{% endif %}
-
-
-</div>
-<!-- MODAL -->
-<div id="modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center">
-
-    <div class="bg-white p-6 rounded-xl text-center w-96">
-
-        <h2 class="text-xl font-bold mb-4 text-[#7a5d47]">
-            Confirmar eliminación
-        </h2>
-
-        <p class="mb-4">
-            ¿Estás seguro de eliminar este producto?
-        </p>
-
-        <p class="text-[#9c775b] font-semibold mb-6" id="productoNombre"></p>
-
-        <form id="formEliminar" method="POST">
-            {{ form.hidden_tag() }} <!-- IMPORTANTE -->
-
-            <div class="flex gap-4 justify-center">
-
-                <button type="submit"
-                    class="bg-red-500 text-white px-6 py-2 rounded-lg">
-                    Sí, desactivar
-                </button>
-
-                <button type="button" onclick="cerrarModal()"
-                    class="bg-gray-400 text-white px-6 py-2 rounded-lg">
-                    Cancelar
-                </button>
-
-            </div>
-
-        </form>
-
+    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        {% for inv in inventarios %}
+            {{ render_card_inventario(inv) }}
+        {% endfor %}
     </div>
-</div>
+
+<!-- MODAL ELIMINAR-->
+ {{ render_modal_eliminar(form) }}
 
 <script>
 function abrirModal(id, nombre){

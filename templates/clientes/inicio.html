@@ -1,2 +1,179 @@
-{% extends "internal_layout.html" %}
-{% block module_content %}{% include "_module_inicio_content.html" %}{% endblock %}
+{% extends "layout2.html" %}
+{% from "macros/forms.html" import render_flash %}
+
+{% block page_title %}Clientes{% endblock %}
+{% block card_title %}Gestión de Clientes{% endblock %}
+
+{% block content %}
+
+{{ render_flash() }}
+
+<!-- Buscador + botón -->
+<div class="flex justify-between items-center gap-4 mb-6">
+    <input type="text" id="buscador" placeholder="Buscar cliente..."
+           value="{{ buscar }}"
+           class="px-4 py-2 rounded-lg w-1/3 border border-gray-300">
+    <a href="{{ url_for('clientes.agregar') }}" class="btn btn-primary">
+        + Agregar cliente
+    </a>
+</div>
+
+<!-- Cards -->
+<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+
+    {% if clientes %}
+        {% for cliente in clientes %}
+        <div class="cliente-item bg-white rounded-xl shadow p-4 hover:shadow-lg transition">
+
+            <img src="{{ cliente.foto }}"
+                 class="w-full h-40 object-cover rounded-lg cursor-pointer hover:scale-105 transition"
+                 onclick="openDetailModal(
+                    '{{ cliente.nombre }}',
+                    '{{ cliente.apellido_uno }}',
+                    '{{ cliente.apellido_dos }}',
+                    '{{ cliente.telefono }}',
+                    '{{ cliente.correo }}',
+                    {{ cliente.id }},
+                    '{{ cliente.foto }}'
+                 )">
+
+            <h3 class="nombre-cliente mt-3 font-bold text-[#5a4633] cursor-pointer"
+                onclick="openDetailModal(
+                    '{{ cliente.nombre }}',
+                    '{{ cliente.apellido_uno }}',
+                    '{{ cliente.apellido_dos }}',
+                    '{{ cliente.telefono }}',
+                    '{{ cliente.correo }}',
+                    {{ cliente.id }},
+                    '{{ cliente.foto }}'
+                )">
+                {{ cliente.nombre }} {{ cliente.apellido_uno }}
+            </h3>
+
+            <p class="text-sm text-gray-500">{{ cliente.correo }}</p>
+
+            <div class="flex gap-2 mt-3">
+                <a href="{{ url_for('clientes.editar', id=cliente.id) }}"
+                   class="border px-3 py-1 rounded-lg text-sm hover:bg-yellow-50">
+                    Editar
+                </a>
+                <button onclick="openDeleteModal('{{ cliente.nombre }} {{ cliente.apellido_uno }}', {{ cliente.id }})"
+                        class="border border-red-500 text-red-500 px-3 py-1 rounded-lg text-sm hover:bg-red-50">
+                    Eliminar
+                </button>
+            </div>
+
+        </div>
+        {% endfor %}
+    {% else %}
+        <div class="col-span-4 text-center py-12">
+            <p class="text-gray-500 text-lg">No hay clientes registrados</p>
+            <a href="{{ url_for('clientes.agregar') }}"
+               class="text-[#a67c52] hover:underline mt-2 inline-block">
+                Registrar el primer cliente
+            </a>
+        </div>
+    {% endif %}
+
+</div>
+
+<!-- MODAL ELIMINAR -->
+<div id="modalEliminar" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-[#efe3c6] p-6 rounded-xl w-96 text-center shadow-md">
+
+        <h2 class="text-lg font-bold text-[#6b4f3a] mb-4">Confirmar eliminación</h2>
+        <p class="mb-4 text-gray-700">¿Estás seguro de eliminar este cliente?</p>
+        <p id="deleteNombre" class="mb-6 text-[#a67c52] font-semibold"></p>
+
+        <form id="formEliminar" method="POST">
+            {{ form_eliminar.hidden_tag() }}
+            <div class="flex justify-center gap-4">
+                <button type="submit"
+                        class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600">
+                    Sí, eliminar
+                </button>
+                <button type="button" onclick="closeModal('modalEliminar')"
+                        class="bg-gray-400 text-white px-4 py-2 rounded-lg hover:bg-gray-500">
+                    Cancelar
+                </button>
+            </div>
+        </form>
+
+    </div>
+</div>
+
+<!-- MODAL DETALLE -->
+<div id="modalDetalle" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-[#efe3c6] p-6 rounded-xl w-[500px] shadow-md">
+
+        <img id="detalleImagen"
+             class="w-64 max-h-64 object-contain bg-white rounded-lg mb-4 hidden items-center mx-auto">
+
+        <h2 class="text-xl font-bold text-[#6b4f3a] mb-4 text-center" id="detalleTitulo"></h2>
+
+        <div class="space-y-2 text-sm text-gray-700">
+            <p><span class="font-semibold text-[#a67c52]">Teléfono:</span> <span id="detalleTel"></span></p>
+            <p><span class="font-semibold text-[#a67c52]">Correo:</span> <span id="detalleCorreo"></span></p>
+        </div>
+
+        <div class="flex justify-end gap-3 mt-6">
+            <a id="btnEditar"
+               class="bg-[#a67c52] text-white px-4 py-2 rounded-lg hover:bg-[#8d6846]">
+                Editar cliente
+            </a>
+            <button onclick="closeModal('modalDetalle')"
+                    class="border border-[#a67c52] px-4 py-2 rounded-lg hover:bg-[#d2a679]">
+                Cerrar ventana
+            </button>
+        </div>
+
+    </div>
+</div>
+
+<script>
+function openDetailModal(nombre, ap1, ap2, tel, correo, id, foto) {
+    closeModal('modalEliminar');
+    document.getElementById('modalDetalle').classList.remove('hidden');
+
+    document.getElementById('detalleTitulo').innerText = nombre + " " + ap1 + (ap2 ? " " + ap2 : "");
+    document.getElementById('detalleTel').innerText    = tel;
+    document.getElementById('detalleCorreo').innerText = correo;
+
+    document.getElementById('btnEditar').href =
+        "{{ url_for('clientes.editar', id=0) }}".replace("0", id);
+
+    const img = document.getElementById('detalleImagen');
+    if (foto) {
+        img.src = foto;
+        img.classList.remove('hidden');
+    } else {
+        img.classList.add('hidden');
+    }
+}
+
+function openDeleteModal(nombre, id) {
+    closeModal('modalDetalle');
+    document.getElementById('modalEliminar').classList.remove('hidden');
+    document.getElementById('deleteNombre').innerText = "Cliente: " + nombre;
+    document.getElementById('formEliminar').action =
+        "{{ url_for('clientes.eliminar', id=0) }}".replace("0", id);
+}
+
+function closeModal(id) {
+    document.getElementById(id).classList.add('hidden');
+}
+
+// Buscador en tiempo real
+const buscador = document.getElementById("buscador");
+const items    = document.querySelectorAll(".cliente-item");
+
+buscador.addEventListener("keyup", function () {
+    const texto = this.value.toLowerCase();
+    items.forEach(item => {
+        const nombre = item.querySelector(".nombre-cliente").textContent.toLowerCase();
+        item.style.display = nombre.includes(texto) ? "block" : "none";
+    });
+});
+</script>
+
+{% endblock %}

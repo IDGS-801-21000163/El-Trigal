@@ -4,6 +4,8 @@ from models import db, CategoriaProducto
 from forms import CategoriaProductoForm, EditCategoriaProductoForm, BuscarCategoriaForm, ConfirmarEliminacionCategoriaForm
 from datetime import datetime
 from models import db, CategoriaProducto, Producto
+from models import Producto  
+import base64
 
 categorias_productos = create_module_blueprint("categorias-productos")
 
@@ -14,11 +16,9 @@ def get_user_id():
     return 1
 
 
-@categorias_productos.route('/', methods=['GET'])
 @categorias_productos.route('/inicio', methods=['GET'])
 def inicio():
     """Listar todas las categorías activas"""
-    page = request.args.get('page', 1, type=int)
     buscar = request.args.get('buscar', '', type=str)
     
     query = CategoriaProducto.query.filter_by(estatus='ACTIVO')
@@ -27,24 +27,21 @@ def inicio():
     if buscar:
         query = query.filter(CategoriaProducto.nombre.ilike(f'%{buscar}%'))
     
-    # Paginar resultados
-    categorias_list = query.paginate(page=page, per_page=12)
-    
-    # Preparar datos para el template
+    categorias_list = query.all() 
+
     categorias_data = []
-    for categoria in categorias_list.items:
+    for categoria in categorias_list:
         categorias_data.append({
             'id': categoria.id,
             'nombre': categoria.nombre,
             'descripcion': categoria.descripcion,
+            'foto': obtener_imagen(categoria.foto)
         })
     
     return render_template(
         'categorias-productos/inicio.html',
         categorias=categorias_data,
-        buscar=buscar,
-        pagination=categorias_list,
-        page=page
+        buscar=buscar
     )
 
 
@@ -55,20 +52,30 @@ def agregar():
     
     if form.validate_on_submit():
         try:
-            # Crear nueva categoría
-            nueva_categoria = CategoriaProducto(
-                nombre=form.nombre.data,
-                descripcion=form.descripcion.data,
-                estatus='ACTIVO',
-                usuario_creacion=get_user_id(),
-                usuario_movimiento=get_user_id()
-            )
-            
-            db.session.add(nueva_categoria)
-            db.session.commit()
+            if form.validate_on_submit():
+                nueva_categoria = CategoriaProducto(
+                    nombre=form.nombre.data,
+                    descripcion=form.descripcion.data,
+                    usuario_creacion=1,
+                    usuario_movimiento=1
+                )
+
+                if form.foto.data:
+                    try:
+                        file = form.foto.data
+                        nueva_categoria.foto = file.read()
+                    except Exception as e:
+                        flash(f'Error al procesar la imagen: {str(e)}', 'error')
+                        return redirect(url_for('categorias_productos.agregar'))
+                else:
+                    with open('static/img/defecto.jpg', 'rb') as f:
+                        nueva_categoria.foto = f.read()
+
+                db.session.add(nueva_categoria)
+                db.session.commit()
             
             flash(f'Categoría "{nueva_categoria.nombre}" creada exitosamente', 'success')
-            return redirect(url_for('categorias_productos.inicio'))
+            return redirect(url_for('categorias_productos.agregar'))
             
         except Exception as e:
             db.session.rollback()
@@ -113,13 +120,15 @@ def editar(id):
             # Actualizar datos
             categoria.nombre = form.nombre.data
             categoria.descripcion = form.descripcion.data
+            if form.foto.data:
+                categoria.foto = form.foto.data.read()
             categoria.usuario_movimiento = get_user_id()
             categoria.fecha_movimiento = datetime.utcnow()
             
             db.session.commit()
             
             flash(f'Categoría "{categoria.nombre}" actualizada exitosamente', 'success')
-            return redirect(url_for('categorias_productos.inicio'))            
+            return redirect(url_for('categorias_productos.editar', id=id))            
         except Exception as e:
             db.session.rollback()
             flash(f'Error al actualizar la categoría: {str(e)}', 'error')
@@ -135,11 +144,8 @@ def editar(id):
         'nombre': categoria.nombre,
         'descripcion': categoria.descripcion,
     }
-    
-    return render_template('categorias-productos/editar.html', form=form, categoria=categoria_data)
-
-
-from models import Producto  # 👈 IMPORTANTE agregar esto arriba
+    imagen = obtener_imagen(categoria.foto)
+    return render_template('categorias-productos/editar.html',form=form,categoria=categoria_data,imagen=imagen)
 
 
 @categorias_productos.route('/eliminar/<int:id>', methods=['POST'])
@@ -186,3 +192,8 @@ def not_found(error):
     """Manejar errores 404"""
     flash('La categoría solicitada no existe', 'error')
     return redirect(url_for('categorias_productos.inicio')), 404
+
+def obtener_imagen(foto):
+    if foto:
+        return f"data:image/png;base64,{base64.b64encode(foto).decode('utf-8')}"
+    return url_for('static', filename='img/defecto.jpg')

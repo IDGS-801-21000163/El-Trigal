@@ -1,0 +1,97 @@
+{% macro render_alerta(tipo, mensaje) %}
+<div class="
+    p-4 rounded-lg mb-6
+    {% if tipo == 'roja' %}bg-red-100 border border-red-400 text-red-800
+    {% elif tipo == 'amarilla' %}bg-yellow-100 border border-yellow-300 text-yellow-800
+    {% endif %}
+">
+    {{ mensaje }}
+</div>
+{% endmacro %}
+{% macro render_card_inventario(inv) %}
+<div class="inventario-item bg-white p-4 rounded-xl shadow-lg">
+
+    <img src="{{ inv.imagen }}"
+        onclick="abrirHistorial({{ inv.producto_id }})"
+        class="w-full h-40 object-cover rounded-xl mb-3 cursor-pointer hover:scale-105 transition">
+
+    <h2 class="nombre-producto text-lg font-bold text-[#9c775b]">
+        {{ inv.producto_nombre }}
+    </h2>
+
+    <p class="text-xs text-gray-600 mb-1">
+        {{ inv.categoria }}
+    </p>
+
+    <p class="text-xs">
+        <span class="font-semibold">Disponible:</span> {{ inv.cantidad }}
+    </p>
+
+    <p class="text-xs">
+        <span class="font-semibold">Caduca:</span> {{ inv.fecha_caducidad }}
+    </p>
+
+    <p class="mt-2 inline-block px-2 py-1 rounded-full text-[10px] font-semibold {{ inv.estado_color }}">
+        {{ inv.estado_display }}
+    </p>
+
+    <div class="flex gap-2 mt-3">
+
+        <a href="{{ url_for('inventario_productos.editar', id=inv.id) }}"
+            class="text-xs border px-3 py-1 rounded-lg">
+            Editar
+        </a>
+
+        {% if inv.cantidad > 0 %}
+        <button 
+            class="text-xs border border-gray-300 text-gray-400 px-3 py-1 rounded-lg cursor-not-allowed">
+            No permitido
+        </button>
+        {% else %}
+        <button onclick="abrirModal({{ inv.id }}, '{{ inv.producto_nombre }}')"
+            class="text-xs border border-red-500 text-red-500 px-3 py-1 rounded-lg">
+            Eliminar
+        </button>
+        {% endif %}
+
+    </div>
+
+</div>
+{% endmacro %}
+{% macro render_modal_eliminar(form) %}
+<div id="modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center">
+
+    <div class="bg-white p-6 rounded-xl text-center w-96">
+
+        <h2 class="text-xl font-bold mb-4 text-[#7a5d47]">
+            Confirmar eliminación
+        </h2>
+
+        <p class="mb-4">
+            ¿Estás seguro de eliminar este producto?
+        </p>
+
+        <p class="text-[#9c775b] font-semibold mb-6" id="productoNombre"></p>
+
+        <form id="formEliminar" method="POST">
+            {{ form.hidden_tag() }}
+
+            <div class="flex gap-4 justify-center">
+
+                <button type="submit"
+                    class="bg-red-500 text-white px-6 py-2 rounded-lg">
+                    Sí, desactivar
+                </button>
+
+                <button type="button" onclick="cerrarModal()"
+                    class="bg-gray-400 text-white px-6 py-2 rounded-lg">
+                    Cancelar
+                </button>
+
+            </div>
+
+        </form>
+
+    </div>
+</div>
+{% endmacro %}

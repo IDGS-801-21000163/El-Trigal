@@ -49,19 +49,29 @@ def inicio():
 
         dias_restantes = None
         por_caducar = False
+        caducado = False
 
         if inv.fecha_caducidad:
             dias_restantes = (inv.fecha_caducidad - datetime.now()).days
-            if dias_restantes <= 3:
-                por_caducar = True
+
+            if dias_restantes < 0 and inv.cantidad_producto > 0:
+                caducado = True
+            elif dias_restantes <= 3:
+                por_caducar = True 
 
         # BADGES
         if inv.estado == 'AGOTADO':
             estado_color = 'bg-red-500 text-white'
             estado_display = 'Agotado'
+
+        elif caducado:
+            estado_color = 'bg-red-500 text-white'
+            estado_display = f'Caducado ({abs(dias_restantes)} días vencido)'
+
         elif por_caducar:
             estado_color = 'bg-yellow-400 text-black'
             estado_display = f'Por caducar ({dias_restantes} días)'
+
         else:
             estado_color = 'bg-green-500 text-white'
             estado_display = 'Disponible'
@@ -70,6 +80,7 @@ def inicio():
 
         inventarios_data.append({
             'id': inv.id,
+            'producto_id': inv.fk_producto,
             'producto_nombre': producto.nombre if producto else 'N/A',
             'categoria': producto.categoria.nombre if producto and producto.categoria else 'N/A',
             'cantidad': int(inv.cantidad_producto),
@@ -85,6 +96,7 @@ def inicio():
 
     # ALERTA GLOBAL (AQUÍ VA)
     hay_alerta = any("caducar" in inv["estado_display"] for inv in inventarios_data)
+    hay_alerta_roja = any("Caducado" in inv["estado_display"] for inv in inventarios_data)
 
     # FORM DE BÚSQUEDA (si lo usas)
     buscar_form = BuscarInventarioForm(request.args)
@@ -94,7 +106,8 @@ def inicio():
         inventarios=inventarios_data,
         pagination=inventarios_list,
         form=form,
-        hay_alerta=hay_alerta  
+        hay_alerta=hay_alerta,
+        hay_alerta_roja=hay_alerta_roja
     )
 
 @inventario_productos.route('/editar/<int:id>', methods=['GET', 'POST'])
@@ -104,7 +117,8 @@ def editar(id):
 
     if form.validate_on_submit():
         try:
-            nueva_cantidad = form.cantidad_producto.data
+            cantidad_restar = form.cantidad_producto.data
+            cantidad_actual = inventario.cantidad_producto
             tipo = form.tipo_movimiento.data
             obs = form.observaciones.data
 
@@ -113,11 +127,15 @@ def editar(id):
             else:
                 motivo = tipo
 
-            if nueva_cantidad is None or nueva_cantidad < 0:
-                flash('Cantidad inválida', 'error')
+            if cantidad_restar is None or cantidad_restar <= 0:
+                flash('La cantidad a restar debe ser mayor a 0', 'error')
                 return redirect(url_for('inventario_productos.editar', id=id))
 
-            cantidad_anterior = inventario.cantidad_producto
+            if cantidad_restar > cantidad_actual:
+                flash('No puedes restar más de lo disponible en inventario', 'error')
+                return redirect(url_for('inventario_productos.editar', id=id))
+
+            nueva_cantidad = cantidad_actual - cantidad_restar
 
             # ACTUALIZAR INVENTARIO
             inventario.cantidad_producto = nueva_cantidad
@@ -126,12 +144,12 @@ def editar(id):
 
             # GUARDAR MOVIMIENTO
             movimiento = InventarioProductoMovimiento(
-                fk_inventario_producto=id,
-                cantidad_anterior=cantidad_anterior,
-                cantidad_nueva=nueva_cantidad,
-                motivo=motivo,
-                usuario_movimiento=get_user_id()
-            )
+            fk_inventario_producto=id,
+            cantidad_anterior=cantidad_actual,
+            cantidad_nueva=nueva_cantidad,
+            motivo=motivo,
+            usuario_movimiento=get_user_id()
+        )
 
             db.session.add(movimiento)
             db.session.commit()
@@ -148,7 +166,7 @@ def editar(id):
     return render_template(
         'inventario-productos/editar.html',
         form=form,
-        inventario={"producto_nombre": inventario.producto.nombre}
+        inventario={"producto_nombre": inventario.producto.nombre,"cantidad_actual": inventario.cantidad_producto}
     )
 
 @inventario_productos.route('/eliminar/<int:id>', methods=['GET', 'POST'])

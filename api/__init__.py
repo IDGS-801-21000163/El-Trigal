@@ -36,6 +36,6 @@ ALL_BLUEPRINTS = [
     produccion,
     pedidos,
     ventas,
-    clientes,
     solicitud_produccion,
+    clientes,
 ]

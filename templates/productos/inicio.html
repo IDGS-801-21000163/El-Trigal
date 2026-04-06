@@ -1,17 +1,11 @@
-{% extends "base.html" %}
+{% extends "layout2.html" %}
+
+{% block page_title %}Productos{% endblock %}
+{% block card_title %}Gestión de productos{% endblock %}
 
 {% block content %}
 
-<div class="flex justify-between mb-6">
-    <h1 class="text-2xl font-bold text-[#6b4f3b]">Productos</h1>
-
-    <a href="{{ url_for('productos.agregar') }}"
-       class="bg-[#9c775b] text-white px-4 py-2 rounded-lg hover:bg-[#7a5d47]">
-        + Agregar producto
-    </a>
-</div>
-
-
+<div class="flex justify-between items-center gap-4 mb-6">
 
 <!-- Filtros -->
 <form method="GET" class="flex gap-4 mb-6">
@@ -28,10 +22,14 @@
         {% endfor %}
     </select>
 
-    <button class="bg-[#9c775b] text-white px-4 py-2 rounded-lg hover:bg-[#7a5d47]">
+    <button class="bg-[#a67c52] text-white px-4 py-2 rounded-lg hover:bg-[#7a5d47]">
         Filtrar
     </button>
+    <a href="{{ url_for('productos.agregar') }}" class="btn btn-primary flex w-full">
+            + Agregar
+        </a>
 </form>
+</div>
 
 
 <!-- Cards -->
@@ -86,43 +84,6 @@
 
 </div>
 
-<!-- PAGINACIÓN -->
-{% if pagination %}
-<div class="mt-8 flex justify-center gap-2">
-
-    {% if pagination.has_prev %}
-        <a href="{{ url_for('productos.inicio', page=pagination.prev_num) }}"
-           class="px-4 py-2 border rounded hover:bg-gray-100">
-            Anterior
-        </a>
-    {% endif %}
-
-    {% for page_num in pagination.iter_pages(left_edge=1, left_current=1, right_current=2, right_edge=1) %}
-        {% if page_num %}
-            {% if page_num == pagination.page %}
-                <span class="px-4 py-2 bg-[#a67c52] text-white rounded">
-                    {{ page_num }}
-                </span>
-            {% else %}
-                <a href="{{ url_for('productos.inicio', page=page_num) }}"
-                   class="px-4 py-2 border rounded hover:bg-gray-100">
-                    {{ page_num }}
-                </a>
-            {% endif %}
-        {% else %}
-            <span class="px-4 py-2">...</span>
-        {% endif %}
-    {% endfor %}
-
-    {% if pagination.has_next %}
-        <a href="{{ url_for('productos.inicio', page=pagination.next_num) }}"
-           class="px-4 py-2 border rounded hover:bg-gray-100">
-            Siguiente
-        </a>
-    {% endif %}
-
-</div>
-{% endif %}
 
 <!-- MODAL ELIMINAR -->
 <div id="modalEliminar" class="hidden fixed inset-0 bg-black bg-opacity-50 items-center justify-center z-50">
@@ -161,9 +122,9 @@
 </div>
 
 <!-- MODAL -->
-<div id="modal" class="fixed inset-0 bg-black bg-opacity-50 hidden justify-center items-center z-50">
+<div id="modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
 
-    <div class="bg-[#e8d8c3] p-6 rounded-2xl w-[700px] relative">
+    <div class="bg-[#efe3c6] p-6 rounded-2xl w-[700px] relative">
 
         <button onclick="cerrarModal()" class="absolute top-3 right-4 text-xl">✖</button>
 
@@ -171,23 +132,24 @@
 
         <div class="flex gap-6">
             <img id="modal-img" class="w-64 rounded-lg">
-
+  
             <div>
                 <p><b>Precio:</b> $ <span id="modal-precio"></span></p>
                 <p><b>Costo:</b> $ <span id="modal-costo"></span></p>
                 <p><b>Categoría:</b> <span id="modal-categoria"></span></p>
 
-                <div class="mt-4 flex gap-2">
+                <div class="mt-4 justify-end flex gap-2">
                     <a id="modal-editar"
-                       class="bg-[#9c775b] text-white px-4 py-2 rounded-lg">
+                       class="bg-[#a67c52] text-white px-4 py-2 rounded-lg hover:bg-[#8d6846]">
                         Editar
                     </a>
 
                     <button onclick="cerrarModal()"
-                        class="bg-[#c69c6d] text-white px-4 py-2 rounded-lg">
+                        class="border border-[#a67c52] px-4 py-2 rounded-lg hover:bg-[#d2a679]">
                         Cerrar
                     </button>
                 </div>
+        </div>
             </div>
         </div>
 

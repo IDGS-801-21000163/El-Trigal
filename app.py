@@ -5,10 +5,12 @@ from api.common import ACTIONS, MODULES, NAV_MODULES
 from config import DevelopmentConfig
 from models import db
 
+from flask_wtf.csrf import CSRFProtect
 
 app = Flask(__name__)
 app.config.from_object(DevelopmentConfig)
 
+#csrf = CSRFProtect(app)
 # Inicializar base de datos
 db.init_app(app)
 

@@ -1,9 +1,11 @@
-{% extends 'base.html' %}
-{% block title %}Cancelar Producción{% endblock %}
+{% extends "layout2.html" %}
+{% block page_title %}Producción{% endblock %}
+{% block card_title %}Cancelar producción{% endblock %}
+
 
 {% block content %}
 
-<div class="bg-white p-6 rounded-xl shadow w-1/2">
+<div >
 
     <h2 class="text-xl font-bold text-[#7a5d47] mb-4">
         ¿Cancelar producción?
@@ -13,27 +15,27 @@
         Esta acción cambiará el estado a CANCELADO.
     </p>
 
-    <form method="POST" class="bg-white p-6 rounded-xl shadow w-2/3">
+    <form method="POST" >
 
     <div class="grid grid-cols-2 gap-4 mb-4">
 
-        <input type="number" name="cantidad"
+        <input type="number" name="cantidad" min="1"
             placeholder="Cantidad de merma extra"
             class="p-2 border rounded-lg" required>
 
         <input type="text" name="observacion"
             placeholder="Observación (obligatoria)"
-            class="p-2 border rounded-lg col-span-2" required>
+            class="p-2 border rounded-lg" required>
 
     </div>
 
     <div class="flex gap-4">
-        <button class="bg-[#7a5d47] text-white px-6 py-2 rounded-lg">
+        <button class="btn btn-primary">
             Guardar
         </button>
 
         <a href="{{ url_for('produccion.inicio') }}"
-           class="bg-[#c49a6c] px-6 py-2 rounded-lg text-white">
+           class="btn btn-outline">
             Cancelar
         </a>
     </div>

@@ -1,10 +1,10 @@
-{% extends 'base.html' %}
-{% block title %}Producción{% endblock %}
+{% extends "layout2.html" %}
+
+{% block page_title %}Producción{% endblock %}
+{% block card_title %}Gestión de producción{% endblock %}
 
 {% block content %}
-
-<h1 class="text-2xl font-bold text-[#7a5d47] mb-6">Producción</h1>
-
+  
 <div class="flex justify-between mb-4">
 
     <div class="flex gap-2 w-1/2">
@@ -15,7 +15,7 @@
             class="px-4 py-2 rounded-lg border border-gray-300 w-full">
 
         <select id="selectEstado" class="px-4 py-2 rounded-lg border">
-            <option value="">Todos</option>
+            <option value="">Todos los estados</option>
             <option value="PENDIENTE">Pendiente</option>
             <option value="EN PROCESO">En proceso</option>
             <option value="TERMINADO">Terminado</option>
@@ -24,13 +24,13 @@
 
         <button 
             onclick="filtrar()"
-            class="bg-[#9c775b] text-white px-4 rounded-lg">
-            Buscar
+            class="bg-[#a67c52] text-white px-4 rounded-lg">
+            Filtrar
         </button>
     </div>
 
     <a href="{{ url_for('produccion.agregar') }}"
-       class="bg-[#9c775b] text-white px-4 py-2 rounded-lg hover:bg-[#7a5d47]">
+       class="btn btn-primary">
         + Agregar producción
     </a>
 
@@ -41,79 +41,87 @@
     <h2 class="text-xl font-bold text-[#7a5d47] mb-6">
         Órdenes Activas
     </h2>
+        <div class="grid grid-cols-6 text-center font-semibold text-[#7a5d47] border-b pb-2 mb-3">
+            <div>ID</div>
+            <div>Producto</div>
+            <div>Cantidad</div>
+            <div>Área</div>
+            <div>Estado</div>
+            <div>Acciones</div>
+        </div>
 
     <div class="space-y-3" id="listaOrdenes">
 
         {% for p in ordenes %}
         <div 
-            class="orden-item flex items-center justify-between border border-[#d6c3a5] rounded-xl px-6 py-4 hover:shadow-md transition"
+            class="orden-item grid grid-cols-6 items-center text-center border border-[#d6c3a5] rounded-xl px-6 py-4 mb-3 hover:shadow-md transition"
             data-producto="{{ p.producto | lower }}"
             data-estado="{{ p.estado }}">
 
-            <!-- INFO -->
-            <div class="flex items-center gap-10">
+            <div class="font-bold text-[#7a5d47]">
+                {{ p.id }}
+            </div>
 
-                <div class="w-12 font-bold text-[#7a5d47]">
-                    {{ p.id }}
-                </div>
+            <div>
+                {{ p.producto }}
+            </div>
 
-                <div class="w-64">
-                    {{ p.producto }}
-                </div>
+            <div>
+                {{ p.cantidad }}
+            </div>
 
-                <div class="w-20 text-center">
-                    {{ p.cantidad }}
-                </div>
+            <div>
+                Ventas
+            </div>
 
-                <!-- ESTADO -->
-                <div class="w-40 text-center">
-                    <span class="px-4 py-1 rounded-full text-sm font-semibold text-white
-                        {% if p.estado == 'PENDIENTE' %}bg-gray-400
-                        {% elif p.estado == 'EN PROCESO' %}bg-yellow-500
-                        {% elif p.estado == 'TERMINADO' %}bg-green-600
-                        {% else %}bg-red-500{% endif %}">
-                        {{ p.estado }}
-                    </span>
-                </div>
-
+            <!-- ESTADO -->
+            <div>
+                <span class="px-3 py-1 rounded-full text-sm font-semibold text-white
+                    {% if p.estado == 'PENDIENTE' %}bg-gray-400
+                    {% elif p.estado == 'EN PROCESO' %}bg-yellow-500
+                    {% elif p.estado == 'TERMINADO' %}bg-green-600
+                    {% elif p.estado == 'CANCELADO' %}bg-red-400
+                    {% else %}bg-red-500{% endif %}">
+                    {{ p.estado }}
+                </span>
             </div>
 
             <!-- ACCIONES -->
-            <div class="flex gap-2">
+            <div class="flex gap-2 justify-center">
 
                 {% if p.tipo == 'SOLICITUD' and p.estado == 'PENDIENTE' %}
                 <a href="{{ url_for('produccion.crear', solicitud_id=p.id) }}"
-                class="bg-[#9c775b] text-white px-4 py-1 rounded-lg">
-                Iniciar
+                class="bg-[#9c775b] text-white px-3 py-1 rounded">
+                    Iniciar
                 </a>
                 {% endif %}
                 
                 {% if p.tipo == 'PRODUCCION' and p.estado == 'PENDIENTE' %}
                 <a href="{{ url_for('produccion.iniciar', id=p.id) }}"
-                class="bg-[#9c775b] text-white px-4 py-1 rounded-lg">
-                Iniciar
+                class="bg-[#9c775b] text-white px-3 py-1 rounded">
+                    Iniciar
                 </a>
                 <a href="{{ url_for('produccion.cancelar', id=p.id) }}"
-                   class="bg-[#b9772b] text-white px-4 py-1 rounded-lg">
-                   Cancelar
+                class="bg-[#b9772b] text-white px-3 py-1 rounded">
+                    Cancelar
                 </a>
                 {% endif %}
 
                 {% if p.tipo == 'PRODUCCION' and p.estado == 'EN PROCESO' %}
                 <a href="{{ url_for('produccion.terminar', id=p.id) }}"
-                class="bg-green-600 text-white px-4 py-1 rounded-lg">
-                Terminar
+                class="bg-green-600 text-white px-3 py-1 rounded">
+                    Terminar
                 </a>
                 <a href="{{ url_for('produccion.cancelar', id=p.id) }}"
-                   class="bg-[#b9772b] text-white px-4 py-1 rounded-lg">
-                   Cancelar
+                class="bg-[#b9772b] text-white px-3 py-1 rounded">
+                    Cancelar
                 </a>
                 {% endif %}
 
                 {% if p.estado == 'CANCELADO' %}
                 <a href="{{ url_for('produccion.merma', id=p.id) }}"
-                   class="bg-yellow-500 text-white px-4 py-1 rounded-lg">
-                   Reportar merma
+                class="bg-yellow-500 text-white px-3 py-1 rounded">
+                    Merma
                 </a>
                 {% endif %}
 

@@ -1,7 +1,7 @@
 from flask_wtf import FlaskForm
 from flask_wtf.file import FileField, FileAllowed
 from wtforms import IntegerField, StringField, DecimalField, SelectField, SubmitField, TextAreaField
-from wtforms.validators import DataRequired, Length, NumberRange, ValidationError
+from wtforms.validators import DataRequired, Length, NumberRange, ValidationError, Optional, Email
 from models import Producto, CategoriaProducto, InventarioProducto, Sucursal
 from wtforms import StringField, SelectField, SubmitField, TextAreaField
 
@@ -28,10 +28,10 @@ class ProductoForm(FlaskForm):
         'Precio de Venta',
         validators=[
             DataRequired(message='El precio es requerido'),
-            NumberRange(min=0.01, message='El precio debe ser mayor a 0')
+            NumberRange(min=1, message='El precio debe ser mayor a 0')
         ],
         places=2,
-        render_kw={"placeholder": "0.00", "step": "0.01", "min": "0"}
+        render_kw={"placeholder": "0.00", "step": "0.01", "min": "1"}
     )
     
     costo_produccion = DecimalField(
@@ -47,9 +47,9 @@ class ProductoForm(FlaskForm):
     foto = FileField(
         'Imagen del Producto',
         validators=[
-            FileAllowed(['jpg', 'jpeg', 'png', 'gif'], 'Solo se permiten imágenes (jpg, jpeg, png, gif)')
+            FileAllowed(['jpg', 'jpeg', 'png'], 'Solo se permiten imágenes (jpg, jpeg, png)')
         ],
-        render_kw={"accept": ".jpg,.jpeg,.png,.gif"}
+        render_kw={"accept": ".jpg,.jpeg,.png"}
     )
     
     submit = SubmitField('Guardar')
@@ -145,6 +145,14 @@ class CategoriaProductoForm(FlaskForm):
             Length(min=5, max=500, message='La descripción debe tener entre 5 y 500 caracteres')
         ],
         render_kw={"placeholder": "Descripción de la categoría", "rows": 4}
+    )
+    
+    foto = FileField(
+        'Imagen de la Categoría',
+        validators=[
+            FileAllowed(['jpg', 'jpeg', 'png'], 'Solo se permiten imágenes (jpg, jpeg, png)')
+        ],
+        render_kw={"accept": ".jpg,.jpeg,.png"}
     )
     
     submit = SubmitField('Guardar')
@@ -247,14 +255,14 @@ class EditInventarioProductoForm(FlaskForm):
     """Formulario para editar inventario (M14)"""
 
     cantidad_producto = IntegerField(
-    'Cantidad de producto',
+    'Cantidad a Descontar',
     validators=[
-        DataRequired(message='La cantidad es requerida'),
-        NumberRange(min=0, message='No puede ser negativa')
+        DataRequired(message='La cantidad es requerida o invalida'),
+        NumberRange(min=1, message='No puede ser negativa')
     ],
     render_kw={
         "placeholder": "0",
-        "min": "0",
+        "min": "1",
         "step": "1"
     }
 )
@@ -296,12 +304,16 @@ class BuscarInventarioForm(FlaskForm):
     
     submit = SubmitField('Buscar')
 
-
+ 
 class ConfirmarEliminacionInventarioForm(FlaskForm):
     """Formulario para confirmar eliminación de inventario"""
     
     confirm = SubmitField('Sí, desactivar')
     cancel = SubmitField('Cancelar')
+    
+# ============================================================================
+# FORMULARIOS PARA PRODUCCIÓN
+# ============================================================================
 
 class ProduccionForm(FlaskForm):
     cantidad = IntegerField(
@@ -312,3 +324,126 @@ class ProduccionForm(FlaskForm):
         ]
     )
     submit = SubmitField("Iniciar producción")
+
+class CancelarProduccionForm(FlaskForm):
+    cantidad = IntegerField(
+        "Cantidad de merma extra",
+        validators=[DataRequired(), NumberRange(min=1)]
+    )
+
+    observacion = StringField(
+        "Observación",
+        validators=[DataRequired()]
+    )
+
+    submit = SubmitField("Guardar")
+
+from wtforms import DateTimeLocalField
+
+class TerminarProduccionForm(FlaskForm):
+    piezas = IntegerField("Piezas correctas", validators=[DataRequired(), NumberRange(min=1)])
+    merma = IntegerField("Merma", validators=[DataRequired(), NumberRange(min=0)])
+    fecha_caducidad = DateTimeLocalField("Fecha de caducidad", format='%Y-%m-%dT%H:%M')
+
+    submit = SubmitField("Guardar y cerrar")
+
+class NuevaProduccionForm(FlaskForm):
+    producto_id = SelectField("Producto", coerce=int)
+    cantidad = IntegerField("Cantidad", validators=[DataRequired(), NumberRange(min=1)])
+    empleado = SelectField("Empleado", coerce=int)
+
+    submit = SubmitField("Guardar")
+    
+# ============================================================================
+# FORMULARIOS PARA CLIENTES
+# ============================================================================
+    
+class ClienteForm(FlaskForm):
+    """Formulario para crear cliente"""
+    nombre = StringField(
+        'Nombre',
+        validators=[
+            DataRequired(message='El nombre es requerido'),
+            Length(min=2, max=65, message='Entre 2 y 65 caracteres')
+        ],
+        render_kw={"placeholder": "Nombre"}
+    )
+    apellido_paterno = StringField(
+        'Apellido Paterno',
+        validators=[
+            DataRequired(message='El apellido paterno es requerido'),
+            Length(min=2, max=65)
+        ],
+        render_kw={"placeholder": "Apellido paterno"}
+    )
+    apellido_materno = StringField(
+        'Apellido Materno',
+        validators=[Optional(), Length(max=65)],
+        render_kw={"placeholder": "Apellido materno (opcional)"}
+    )
+    telefono = StringField(
+        'Teléfono',
+        validators=[
+            DataRequired(message='El teléfono es requerido'),
+            Length(min=10, max=15, message='Entre 10 y 15 caracteres')
+        ],
+        render_kw={"placeholder": "10 dígitos"}
+    )
+    correo = StringField(
+        'Correo electrónico',
+        validators=[
+            DataRequired(message='El correo es requerido'),
+            Email(message='Correo no válido'),
+            Length(max=254)
+        ],
+        render_kw={"placeholder": "correo@ejemplo.com"}
+    )
+    foto = FileField(
+        'Foto del cliente',
+        validators=[
+            FileAllowed(['jpg', 'jpeg', 'png'], 'Solo imágenes jpg, jpeg, png')
+        ],
+        render_kw={"accept": ".jpg,.jpeg,.png"}
+    )
+    submit = SubmitField('Guardar')
+
+
+class EditClienteForm(ClienteForm):
+    """Formulario para editar cliente — permite mismo correo/teléfono del mismo registro"""
+    
+    def __init__(self, *args, **kwargs):
+        self.persona_id = kwargs.pop('persona_id', None)
+        super().__init__(*args, **kwargs)
+
+    def validate_correo(self, field):
+        from models import Persona
+        existe = Persona.query.filter(
+            Persona.correo == field.data,
+            Persona.id != self.persona_id
+        ).first()
+        if existe:
+            raise ValidationError('Este correo ya está en uso')
+
+    def validate_telefono(self, field):
+        from models import Persona
+        existe = Persona.query.filter(
+            Persona.telefono == field.data,
+            Persona.id != self.persona_id
+        ).first()
+        if existe:
+            raise ValidationError('Este teléfono ya está en uso')
+
+
+class BuscarClienteForm(FlaskForm):
+    """Formulario para buscar clientes"""
+    buscar = StringField(
+        'Buscar cliente',
+        validators=[Length(min=0, max=100)],
+        render_kw={"placeholder": "Buscar por nombre..."}
+    )
+    submit = SubmitField('Buscar')
+
+
+class ConfirmarEliminacionClienteForm(FlaskForm):
+    """Solo para generar el CSRF token en el modal de eliminar"""
+    submit = SubmitField('Sí, eliminar')

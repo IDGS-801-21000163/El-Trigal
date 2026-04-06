@@ -1,2 +1,23 @@
-{% extends "internal_layout.html" %}
-{% block module_content %}{% include "_module_detail_content.html" %}{% endblock %}
+{% extends 'layout2.html' %} 
+
+{% block page_title %}Clientes{% endblock %}
+{% block card_title %}Detalle del cliente{% endblock %}
+
+{% block content %}
+<div class="bg-[#e8d9b5] p-6 rounded-xl shadow max-w-3xl mx-auto">
+    <div class="flex justify-center mb-4">
+        <img src="{{ url_for('clientes.foto', persona_id=cliente.id) }}"
+             class="w-32 h-32 object-cover rounded-full">
+    </div>
+    <div class="bg-white p-6 rounded-lg space-y-3">
+        <p><b>Nombre:</b> {{ cliente.nombre }} {{ cliente.apellido_uno }} {{ cliente.apellido_dos or '' }}</p>
+        <p><b>Correo:</b> {{ cliente.correo }}</p>
+        <p><b>Teléfono:</b> {{ cliente.telefono }}</p>
+        <p><b>Estatus:</b> {{ cliente.estatus }}</p>
+    </div>
+    <div class="mt-6 text-center">
+        <a href="{{ url_for('clientes.inicio') }}"
+           class="bg-[#a47148] text-white px-4 py-2 rounded">Regresar</a>
+    </div>
+</div>
+{% endblock %}

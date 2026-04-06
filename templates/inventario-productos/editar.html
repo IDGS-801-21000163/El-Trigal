@@ -1,11 +1,12 @@
-{% extends 'base.html' %}
+{% extends "layout2.html" %}
+{% from "macros/forms.html" import render_input %}
+
+{% block page_title %}Inventario de productos{% endblock %}
+{% block card_title %}Editar Inventario Producto{% endblock %}
 {% block content %}
 
-<h1 class="text-2xl font-bold text-[#7a5d47] mb-6">
-    Editar Inventario Producto
-</h1>
 
-<div class="bg-[#f5f1e6] p-6 rounded-xl shadow max-w-2xl">
+<div >
 
 <form method="POST">
 {{ form.hidden_tag() }}
@@ -20,34 +21,30 @@
     </div>
 
     <!-- CANTIDAD -->
-    <div>
-        <label class="text-sm">Cantidad de producto</label>
-        {{ form.cantidad_producto(class="w-full border px-3 py-2 rounded-lg") }}
+     <div>
+    <label class="text-sm">Cantidad actual</label>
+    <input type="text" value="{{ inventario.cantidad_actual }}"
+        class="w-full border px-3 py-2 rounded-lg bg-gray-100" disabled>
     </div>
+    {{ render_input(form.cantidad_producto) }}
 
         <!-- MOTIVO (SELECT) -->
-    <div class="col-span-2">
-        <label class="text-sm">Motivo</label>
-        {{ form.tipo_movimiento(class="w-full border px-3 py-2 rounded-lg") }}
-    </div>
+    {{ render_input(form.tipo_movimiento) }}
 
 <!-- OBSERVACIONES -->
-<div class="col-span-2">
-    <label class="text-sm">Observaciones</label>
-    {{ form.observaciones(class="w-full border px-3 py-2 rounded-lg") }}
-</div>
-    </div>
+    {{ render_input(form.observaciones) }}
+
 
 </div>
 
-<div class="flex gap-4 mt-6 justify-center">
+<div >
 
-    <button class="bg-[#9c775b] text-white px-8 py-2 rounded-lg">
+    <button class="btn btn-primary">
         Guardar
     </button>
 
     <a href="{{ url_for('inventario_productos.inicio') }}"
-        class="bg-[#c9a27c] text-white px-8 py-2 rounded-lg">
+        class="btn btn-outline">
         Regresar
     </a>
 

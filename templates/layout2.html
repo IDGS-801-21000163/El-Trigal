@@ -1,0 +1,130 @@
+{% from "macros/forms.html" import render_flash %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>El Trigal — Sistema de Panadería</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,700;1,500&family=Lato:wght@300;400;700&display=swap" rel="stylesheet"/>
+  <link href="{{url_for('static', filename='css/layout.css')}}" rel="stylesheet">
+<link href="{{ url_for('static', filename='css/output.css') }}" rel="stylesheet">
+
+</head>
+<body>
+
+  <!-- ══ SIDEBAR ══ -->
+  <aside id="sidebar">
+    <div class="sidebar-logo">
+    
+      <img src="{{ url_for('static', filename='img/logoTrigal.png') }}" alt="El Trigal Logo">
+    </div>
+    <div class="sidebar-divider"></div>
+
+    <nav id="main-nav">
+
+      <!-- Productos -->
+        <a href="{{ url_for('productos.inicio') }}"
+          class="block px-6 py-3 rounded-lg transition
+          {% if request.endpoint.startswith('productos') %}
+              bg-[#ae712f] text-white
+          {% else %}
+              bg-[#b9772b] hover:bg-[#ae712f]/80 text-white
+          {% endif %}">
+            Productos
+          </svg>
+        </a>
+
+        <!-- Categorías -->
+        <a href="{{ url_for('categorias_productos.inicio') }}"
+          class="block px-6 py-3 rounded-lg transition
+          {% if request.endpoint.startswith('categorias_productos') %}
+              bg-[#ae712f] text-white
+          {% else %}
+              bg-[#b9772b] hover:bg-[#ae712f]/80 text-white
+          {% endif %}">
+            Categorías de productos
+        </a>
+
+        <!-- Inventario Productos-->
+        <a href="{{ url_for('inventario_productos.inicio') }}"
+          class="block px-6 py-3 rounded-lg transition
+          {% if request.endpoint.startswith('inventario_productos') %}
+              bg-[#ae712f] text-white
+          {% else %}
+              bg-[#b9772b] hover:bg-[#ae712f]/80 text-white
+          {% endif %}">
+            Inventario de productos
+        </a>
+        <!-- Solicitud de producción -->
+        <a href="{{ url_for('solicitud_produccion.inicio') }}"
+          class="block px-6 py-3 rounded-lg transition
+          {% if request.endpoint.startswith('solicitud_produccion') %}
+              bg-[#ae712f] text-white
+          {% else %}
+              bg-[#b9772b] hover:bg-[#ae712f]/80 text-white
+          {% endif %}">
+            Solicitud de producción
+        </a>
+        <!-- producción -->
+        <a href="{{ url_for('produccion.inicio') }}"
+          class="block px-6 py-3 rounded-lg transition
+          {% if request.endpoint.startswith('produccion') %}
+              bg-[#ae712f] text-white
+          {% else %}
+              bg-[#b9772b] hover:bg-[#ae712f]/80 text-white
+          {% endif %}">
+            Producción
+        </a>
+        <!-- cliente -->
+        <a href="{{ url_for('clientes.inicio') }}"
+          class="block px-6 py-3 rounded-lg transition
+          {% if request.endpoint.startswith('clientes') %}
+              bg-[#ae712f] text-white
+          {% else %}
+              bg-[#b9772b] hover:bg-[#ae712f]/80 text-white
+          {% endif %}">
+            Clientes
+        </a>
+
+    </nav>
+
+    <div class="sidebar-footer">
+      El Trigal © 2026<br/>Sistema de Gestión
+    </div>
+  </aside>
+
+  <!-- ══ MAIN ══ -->
+  <main id="content">
+     
+
+    <header id="topbar">
+   <h1 class="page-title">{% block page_title %}TITULO{% endblock %}</h1>
+
+    
+    </header>
+
+    <div class="page-body">
+      {{ render_flash() }}
+      <div class="card">
+        <div class="card-header">
+<span class="card-title">{% block card_title %}TITULO CARD{% endblock %}</span>
+        </div>
+        <div class="card-body">
+  {% block content %}
+  
+  
+  {% endblock %}      
+
+     
+       </div>
+      </div>
+
+    </div>
+
+    <footer id="statusbar">
+    </footer>
+
+  </main>
+<script src="https://cdn.jsdelivr.net/npm/flowbite@3.1.2/dist/flowbite.min.js"></script>
+</body>
+</html>
