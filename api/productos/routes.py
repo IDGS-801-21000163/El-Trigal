@@ -13,36 +13,34 @@ productos = create_module_blueprint("productos")
 
 
 def get_user_id():
-    """Obtener el ID del usuario actual (por ahora retorna 1)"""
     # TODO: Implementar autenticación real
     return 1
 
 
 @productos.route('/', methods=['GET'])
 def inicio():
-    """Listar todos los productos activos"""
     page = request.args.get('page', 1, type=int)
     buscar = request.args.get('buscar', '', type=str)
     categoria_id = request.args.get('categoria', 0, type=int)
-    
+
     query = Producto.query.filter_by(estatus='ACTIVO')
-    
+
     # Filtrar por búsqueda
     if buscar:
         query = query.filter(Producto.nombre.ilike(f'%{buscar}%'))
-    
+
     # Filtrar por categoría
     if categoria_id > 0:
         query = query.filter_by(fk_categoria=categoria_id)
-    
+
     # Paginar resultados
     productos_list = query.paginate(page=page, per_page=12)
-    
-    # Preparar datos para el template
+
+    # Construir lista de datos para el template
     productos_data = []
     for producto in productos_list.items:
 
-        # VALIDAR INVENTARIO POR CADA PRODUCTO
+        # Verificar si el producto tiene inventario activo con existencia
         tiene_inventario = InventarioProducto.query.filter(
             InventarioProducto.fk_producto == producto.id,
             InventarioProducto.estatus == 'ACTIVO',
@@ -55,15 +53,15 @@ def inicio():
             'precio': float(producto.precio),
             'costo': float(producto.costo_produccion),
             'categoria': producto.categoria.nombre,
-            'imagen': f"data:image/png;base64,{base64.b64encode(producto.foto).decode('utf-8')}" if producto.foto else url_for('static', filename='img/defecto.jpg'),
-            
+            'imagen': f"data:image/png;base64,{base64.b64encode(producto.foto).decode('utf-8')}"
+            if producto.foto else url_for('static', filename='img/defecto.jpg'),
             'tiene_inventario': tiene_inventario
         })
-        
-    
+
     # Obtener categorías para el filtro
     categorias = CategoriaProducto.query.filter_by(estatus='ACTIVO').all()
     form_eliminar = ConfirmarEliminacionProductoForm()
+
     return render_template(
         'productos/inicio.html',
         productos=productos_data,
@@ -72,8 +70,9 @@ def inicio():
         categoria_id=categoria_id,
         pagination=productos_list,
         page=page,
-        form_eliminar=form_eliminar  # 👈 ESTE FALTABA
+        form_eliminar=form_eliminar
     )
+
 
 @productos.route('/agregar', methods=['GET', 'POST'])
 def agregar():
@@ -83,13 +82,13 @@ def agregar():
         print("FORM VALIDO")
 
         try:
-            # Validar categoría
+            # Validar categoría activa
             categoria = CategoriaProducto.query.get(form.fk_categoria.data)
             if not categoria or categoria.estatus != 'ACTIVO':
                 flash('Categoría inválida o inactiva', 'error')
                 return redirect(url_for('productos.agregar'))
 
-            
+            # Leer y validar imagen subida
             if form.foto.data:
                 try:
                     file = form.foto.data
@@ -107,10 +106,9 @@ def agregar():
                 except Exception as e:
                     flash(f'Error al procesar la imagen: {str(e)}', 'error')
                     return redirect(url_for('productos.agregar'))
-
             else:
                 foto = None
-            
+
             # Crear nuevo producto
             nuevo_producto = Producto(
                 fk_categoria=form.fk_categoria.data,
@@ -122,67 +120,66 @@ def agregar():
                 usuario_creacion=get_user_id(),
                 usuario_movimiento=get_user_id()
             )
-            
+
             db.session.add(nuevo_producto)
             db.session.commit()
-            
+
             flash(f'Producto "{nuevo_producto.nombre}" creado exitosamente', 'success')
             return redirect(url_for('productos.inicio'))
-            
+
         except Exception as e:
             db.session.rollback()
             flash(f'Error al crear el producto: {str(e)}', 'error')
             return redirect(url_for('productos.agregar'))
-    
+
     return render_template('productos/agregar.html', form=form)
 
 
 @productos.route('/detalle/<int:id>', methods=['GET'])
 def detalle(id):
-    """Ver detalle de un producto"""
     producto = Producto.query.get_or_404(id)
-    
+
     if producto.estatus != 'ACTIVO':
         flash('El producto no está disponible', 'warning')
         return redirect(url_for('productos.inicio'))
-    
+
     producto_data = {
         'id': producto.id,
         'nombre': producto.nombre,
         'precio': float(producto.precio),
         'costo': float(producto.costo_produccion),
         'categoria': producto.categoria.nombre,
-        'imagen': f"data:image/png;base64,{base64.b64encode(producto.foto).decode('utf-8')}" if producto.foto else url_for('static', filename='img/defecto.jpg')    }
-    
+        'imagen': f"data:image/png;base64,{base64.b64encode(producto.foto).decode('utf-8')}"
+        if producto.foto else url_for('static', filename='img/defecto.jpg')
+    }
+
     return render_template('productos/detalle.html', producto=producto_data)
 
 
 @productos.route('/editar/<int:id>', methods=['GET', 'POST'])
 def editar(id):
-    """Editar un producto existente"""
     producto = Producto.query.get_or_404(id)
-    
+
     if producto.estatus != 'ACTIVO':
         flash('No puedes editar un producto inactivo', 'warning')
         return redirect(url_for('productos.inicio'))
-    
+
     form = EditProductoForm()
     form.producto_id = id
-    
+
     if form.validate_on_submit():
         try:
-            # Validar que la categoría existe
+            # Validar que la categoría existe y está activa
             categoria = CategoriaProducto.query.get(form.fk_categoria.data)
             if not categoria or categoria.estatus != 'ACTIVO':
                 flash('Categoría inválida o inactiva', 'error')
                 return redirect(url_for('productos.editar', id=id))
-            
+
             # Actualizar datos
             producto.nombre = form.nombre.data
             producto.fk_categoria = form.fk_categoria.data
             producto.precio = form.precio.data
-            
-            # Manejar la carga de nueva imagen
+
             if form.foto.data:
                 try:
                     file = form.foto.data
@@ -190,38 +187,39 @@ def editar(id):
                 except Exception as e:
                     flash(f'Error al procesar la imagen: {str(e)}', 'error')
                     return redirect(url_for('productos.editar', id=id))
-            
-            # No permitir edición del costo (RNF)
+
             # El costo se actualiza automáticamente desde recetas
-            
             producto.usuario_movimiento = get_user_id()
             producto.fecha_movimiento = datetime.utcnow()
-            
+
             db.session.commit()
-            
+
             flash(f'Producto "{producto.nombre}" actualizado exitosamente', 'success')
-            return redirect(url_for('productos.inicio'))            
+            return redirect(url_for('productos.inicio'))
+
         except Exception as e:
             db.session.rollback()
             flash(f'Error al actualizar el producto: {str(e)}', 'error')
             return redirect(url_for('productos.editar', id=id))
-    
+
     elif request.method == 'GET':
         # Pre-cargar datos del formulario
         form.nombre.data = producto.nombre
         form.fk_categoria.data = producto.fk_categoria
         form.precio.data = producto.precio
         form.costo_produccion.data = producto.costo_produccion
-    
+
     producto_data = {
         'id': producto.id,
         'nombre': producto.nombre,
         'precio': float(producto.precio),
         'costo': float(producto.costo_produccion),
         'categoria': producto.categoria.nombre,
-        'imagen': f"data:image/png;base64,{base64.b64encode(producto.foto).decode('utf-8')}" if producto.foto else url_for('static', filename='img/defecto.jpg')    }
-    
-    return render_template('productos/editar.html', form=form, producto=producto_data,imagen=producto_data['imagen'])
+        'imagen': f"data:image/png;base64,{base64.b64encode(producto.foto).decode('utf-8')}"
+        if producto.foto else url_for('static', filename='img/defecto.jpg')
+    }
+
+    return render_template('productos/editar.html', form=form, producto=producto_data, imagen=producto_data['imagen'])
 
 
 @productos.route('/eliminar/<int:id>', methods=['POST'])
@@ -231,7 +229,7 @@ def eliminar(id):
 
     if form.validate_on_submit():
         try:
-            # VALIDAR INVENTARIO ACTIVO
+            # Bloquear si tiene inventario activo
             inventario = InventarioProducto.query.filter_by(
                 fk_producto=producto.id,
                 estatus='ACTIVO'
@@ -241,7 +239,7 @@ def eliminar(id):
                 flash('No puedes eliminar este producto porque tiene inventario activo', 'error')
                 return redirect(url_for('productos.inicio'))
 
-            # SI NO TIENE INVENTARIO, ELIMINAR
+            # Soft delete
             producto.estatus = 'INACTIVO'
             producto.usuario_movimiento = get_user_id()
             producto.fecha_movimiento = datetime.utcnow()
@@ -252,14 +250,13 @@ def eliminar(id):
         except Exception as e:
             db.session.rollback()
             flash(f'Error al desactivar el producto: {str(e)}', 'error')
-
     else:
         flash("Error CSRF o formulario inválido", "error")
 
     return redirect(url_for('productos.inicio'))
 
+
 @productos.errorhandler(404)
 def not_found(error):
-    """Manejar errores 404"""
     flash('El producto solicitado no existe', 'error')
     return redirect(url_for('productos.inicio')), 404

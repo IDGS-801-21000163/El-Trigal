@@ -14,28 +14,25 @@ def get_user_id():
 
 
 def obtener_imagen(foto):
-    """Convierte bytes a base64 para mostrar en template, igual que categorías"""
     if foto:
         return f"data:image/jpeg;base64,{base64.b64encode(foto).decode('utf-8')}"
     return url_for('static', filename='img/defecto.jpg')
 
 
 def foto_defecto():
-    """Lee la imagen por defecto desde disco"""
+    # Leer imagen por defecto desde disco
     ruta = os.path.join('static', 'img', 'defecto.jpg')
     with open(ruta, 'rb') as f:
         return f.read()
 
 
-# ==========================
-# LISTADO
-# ==========================
 @clientes.route("/")
 def inicio():
     buscar = request.args.get('buscar', '', type=str)
 
     query = Cliente.query.join(Persona).filter(Cliente.estatus == 'ACTIVO')
 
+    # Filtrar por nombre o apellido
     if buscar:
         query = query.filter(
             Persona.nombre.ilike(f'%{buscar}%') |
@@ -44,7 +41,7 @@ def inicio():
 
     clientes_list = query.all()
 
-    # Construir lista de dicts igual que categorías
+    # Construir lista de datos para el template
     clientes_data = []
     for c in clientes_list:
         clientes_data.append({
@@ -58,7 +55,7 @@ def inicio():
             'foto': obtener_imagen(c.persona.foto)
         })
 
-    # Form solo para el CSRF del modal eliminar
+    # Form para el CSRF del modal eliminar
     form_eliminar = ConfirmarEliminacionClienteForm()
 
     return render_template(
@@ -69,9 +66,6 @@ def inicio():
     )
 
 
-# ==========================
-# AGREGAR
-# ==========================
 @clientes.route("/agregar", methods=["GET", "POST"])
 def agregar():
     form = ClienteForm()
@@ -84,7 +78,7 @@ def agregar():
                 flash("El correo ya está registrado", "error")
                 return redirect(url_for('clientes.agregar'))
 
-            # Foto
+            # Leer imagen subida o usar imagen por defecto
             if form.foto.data and form.foto.data.filename:
                 foto_bytes = form.foto.data.read()
             else:
@@ -123,9 +117,6 @@ def agregar():
     return render_template("clientes/agregar_presencial.html", form=form)
 
 
-# ==========================
-# EDITAR
-# ==========================
 @clientes.route("/editar/<int:id>", methods=["GET", "POST"])
 def editar(id):
     cliente = Cliente.query.get_or_404(id)
@@ -139,6 +130,7 @@ def editar(id):
 
     if form.validate_on_submit():
         try:
+            # Actualizar datos
             persona.nombre        = form.nombre.data
             persona.apellido_uno  = form.apellido_paterno.data
             persona.apellido_dos  = form.apellido_materno.data or None
@@ -160,6 +152,7 @@ def editar(id):
             return redirect(url_for('clientes.editar', id=id))
 
     elif request.method == 'GET':
+        # Pre-cargar datos del formulario
         form.nombre.data           = persona.nombre
         form.apellido_paterno.data = persona.apellido_uno
         form.apellido_materno.data = persona.apellido_dos
@@ -171,9 +164,6 @@ def editar(id):
     return render_template("clientes/editar.html", form=form, imagen=imagen, cliente_id=id)
 
 
-# ==========================
-# ELIMINAR (soft delete)
-# ==========================
 @clientes.route("/eliminar/<int:id>", methods=["POST"])
 def eliminar(id):
     form = ConfirmarEliminacionClienteForm()
@@ -186,6 +176,7 @@ def eliminar(id):
             return redirect(url_for('clientes.inicio'))
 
         try:
+            # Soft delete en cliente y persona
             cliente.estatus                    = 'INACTIVO'
             cliente.persona.estatus            = 'INACTIVO'
             cliente.usuario_movimiento         = get_user_id()

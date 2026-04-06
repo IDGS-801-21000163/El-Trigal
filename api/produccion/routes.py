@@ -7,6 +7,7 @@ from forms import TerminarProduccionForm, CancelarProduccionForm, NuevaProduccio
 
 produccion = create_module_blueprint("produccion")
 
+
 def get_user_id():
     return 1
 
@@ -15,6 +16,7 @@ def get_empleado_id():
 
 def get_sucursal_id():
     return 1
+
 
 @produccion.route("/iniciar/<int:id>")
 def iniciar(id):
@@ -26,17 +28,18 @@ def iniciar(id):
 
     prod.estado = "EN PROCESO"
 
+    # Sincronizar estado de la solicitud asociada
     detalle = ProduccionDetalle.query.filter_by(fk_produccion=id).first()
-
     if detalle and detalle.fk_solicitud:
         solicitud = SolicitudProduccion.query.get(detalle.fk_solicitud)
         if solicitud:
-            solicitud.estado = "EN_PRODUCCION"   # ← estado correcto del ENUM
+            solicitud.estado = "EN_PRODUCCION"
 
     db.session.commit()
 
     flash("Producción iniciada", "success")
     return redirect(url_for("produccion.inicio"))
+
 
 @produccion.route("/")
 def inicio():
@@ -45,8 +48,8 @@ def inicio():
 
     data = []
 
+    # Cargar producciones
     producciones = Produccion.query.order_by(Produccion.id.desc()).all()
-
     for p in producciones:
         detalle = ProduccionDetalle.query.filter_by(fk_produccion=p.id).first()
         if not detalle:
@@ -59,9 +62,10 @@ def inicio():
             "estado": p.estado,
             "tipo": "PRODUCCION",
             "origen": detalle.origen if detalle.origen else "INTERNO",
-            "fecha": p.fecha_creacion or datetime.min   # <-- AGREGA
+            "fecha": p.fecha_creacion or datetime.min
         })
 
+    # Cargar solicitudes que aún no tienen producción
     solicitudes_usadas = set()
     for d in ProduccionDetalle.query.all():
         if d.fk_solicitud:
@@ -81,7 +85,7 @@ def inicio():
             "fecha": s.fecha_creacion or datetime.min
         })
 
-    # Ordenar por fecha DESC, y como desempate por id DESC
+    # Ordenar por fecha desc, desempate por id desc
     data.sort(key=lambda x: (x["fecha"], x["id"]), reverse=True)
 
     return render_template(
@@ -90,10 +94,10 @@ def inicio():
         estado=estado,
         buscar=buscar
     )
-    
+
+
 @produccion.route("/crear/<int:solicitud_id>")
 def crear(solicitud_id):
-
     solicitud = SolicitudProduccion.query.get_or_404(solicitud_id)
 
     if solicitud.estado != "PENDIENTE":
@@ -103,7 +107,7 @@ def crear(solicitud_id):
     nueva_produccion = Produccion(
         fk_empleado=get_empleado_id(),
         fk_sucursal=get_sucursal_id(),
-        estado="PENDIENTE",          # ← PENDIENTE, no EN PROCESO
+        estado="PENDIENTE",
         usuario_creacion=get_user_id(),
         usuario_movimiento=get_user_id()
     )
@@ -124,7 +128,7 @@ def crear(solicitud_id):
 
     db.session.add(detalle)
 
-    # Sincronizar M16: marcar como aprobada (no EN_PRODUCCION aún)
+    # Marcar solicitud como aprobada (no EN_PRODUCCION aún)
     solicitud.estado = "APROBADA"
 
     db.session.commit()
@@ -135,28 +139,25 @@ def crear(solicitud_id):
 
 @produccion.route("/terminar/<int:id>", methods=["GET", "POST"])
 def terminar(id):
-
     prod = Produccion.query.get_or_404(id)
     detalle = ProduccionDetalle.query.filter_by(fk_produccion=id).first()
 
     if request.method == "POST":
-
         piezas = int(request.form.get("piezas"))
         merma = int(request.form.get("merma"))
         fecha = request.form.get("fecha_caducidad")
 
-        # VALIDACIONES
         if not fecha:
             flash("La fecha de caducidad es obligatoria", "error")
             return redirect(url_for("produccion.terminar", id=id))
 
         fecha = datetime.fromisoformat(fecha)
 
-        # ACTUALIZAR PRODUCCIÓN
+        # Registrar resultado de producción
         detalle.cantidad_producto = piezas
         prod.estado = "TERMINADO"
 
-        # INVENTARIO
+        # Actualizar o crear registro de inventario
         inventario = InventarioProducto.query.filter_by(
             fk_producto=detalle.fk_producto,
             fk_sucursal=get_sucursal_id(),
@@ -178,7 +179,7 @@ def terminar(id):
             )
             db.session.add(nuevo)
 
-        # 🔄 SINCRONIZAR M16
+        # Sincronizar estado de la solicitud
         if detalle.fk_solicitud:
             solicitud = SolicitudProduccion.query.get(detalle.fk_solicitud)
             if solicitud:
@@ -189,12 +190,11 @@ def terminar(id):
         flash("Producción terminada correctamente", "success")
         return redirect(url_for("produccion.inicio"))
 
-    
     return render_template("produccion/editar.html", produccion=prod)
+
 
 @produccion.route("/agregar", methods=["GET", "POST"])
 def agregar():
-
     if request.method == "POST":
         producto_id = request.form.get("producto_id")
         cantidad = int(request.form.get("cantidad"))
@@ -211,7 +211,7 @@ def agregar():
             fk_empleado=get_empleado_id(),
             fk_sucursal=get_sucursal_id(),
             estado="PENDIENTE",
-            fecha_creacion=datetime.utcnow(),  
+            fecha_creacion=datetime.utcnow(),
             usuario_creacion=get_user_id(),
             usuario_movimiento=get_user_id()
         )
@@ -225,8 +225,8 @@ def agregar():
             cantidad_solicitada=cantidad,
             cantidad_producto=0,
             origen="INTERNO",
-            usuario_creacion=get_user_id(),       
-            usuario_movimiento=get_user_id()      
+            usuario_creacion=get_user_id(),
+            usuario_movimiento=get_user_id()
         )
 
         db.session.add(detalle)
@@ -235,6 +235,7 @@ def agregar():
         flash("Producción creada", "success")
         return redirect(url_for("produccion.inicio"))
 
+    # Cargar productos activos para el formulario
     productos = Producto.query.filter_by(estatus="ACTIVO").all()
 
     return render_template("produccion/agregar.html", productos=productos)
@@ -242,16 +243,13 @@ def agregar():
 
 @produccion.route("/merma/<int:id>", methods=["GET", "POST"])
 def merma(id):
-
     produccion = Produccion.query.get_or_404(id)
 
     if request.method == "POST":
         cantidad = request.form.get("cantidad")
         observacion = request.form.get("observacion")
 
-        # aquí puedes guardar en tabla merma (si la haces)
         flash("Merma registrada", "success")
-
         return redirect(url_for("produccion.inicio"))
 
     return render_template("produccion/eliminar.html", produccion=produccion)
@@ -262,12 +260,12 @@ def cancelar(id):
     prod = Produccion.query.get_or_404(id)
     prod.estado = "CANCELADO"
 
+    # Sincronizar estado de la solicitud asociada
     detalle = ProduccionDetalle.query.filter_by(fk_produccion=id).first()
-
     if detalle and detalle.fk_solicitud:
         solicitud = SolicitudProduccion.query.get(detalle.fk_solicitud)
         if solicitud:
-            solicitud.estado = "RECHAZADA" 
+            solicitud.estado = "RECHAZADA"
 
     db.session.commit()
 

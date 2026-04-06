@@ -11,14 +11,12 @@ categorias_productos = create_module_blueprint("categorias-productos")
 
 
 def get_user_id():
-    """Obtener el ID del usuario actual (por ahora retorna 1)"""
     # TODO: Implementar autenticación real
     return 1
 
 
 @categorias_productos.route('/inicio', methods=['GET'])
 def inicio():
-    """Listar todas las categorías activas"""
     buscar = request.args.get('buscar', '', type=str)
     
     query = CategoriaProducto.query.filter_by(estatus='ACTIVO')
@@ -29,6 +27,7 @@ def inicio():
     
     categorias_list = query.all() 
 
+    # Construir lista de datos para el template
     categorias_data = []
     for categoria in categorias_list:
         categorias_data.append({
@@ -47,7 +46,6 @@ def inicio():
 
 @categorias_productos.route('/agregar', methods=['GET', 'POST'])
 def agregar():
-    """Crear una nueva categoría"""
     form = CategoriaProductoForm()
     
     if form.validate_on_submit():
@@ -60,6 +58,7 @@ def agregar():
                     usuario_movimiento=1
                 )
 
+                # Leer imagen subida o usar imagen por defecto
                 if form.foto.data:
                     try:
                         file = form.foto.data
@@ -87,9 +86,9 @@ def agregar():
 
 @categorias_productos.route('/detalle/<int:id>', methods=['GET'])
 def detalle(id):
-    """Ver detalle de una categoría"""
     categoria = CategoriaProducto.query.get_or_404(id)
     
+    # Redirigir si la categoría no está activa
     if categoria.estatus != 'ACTIVO':
         flash('La categoría no está disponible', 'warning')
         return redirect(url_for('categorias_productos.inicio'))
@@ -105,7 +104,6 @@ def detalle(id):
 
 @categorias_productos.route('/editar/<int:id>', methods=['GET', 'POST'])
 def editar(id):
-    """Editar una categoría existente"""
     categoria = CategoriaProducto.query.get_or_404(id)
     
     if categoria.estatus != 'ACTIVO':
@@ -145,12 +143,11 @@ def editar(id):
         'descripcion': categoria.descripcion,
     }
     imagen = obtener_imagen(categoria.foto)
-    return render_template('categorias-productos/editar.html',form=form,categoria=categoria_data,imagen=imagen)
+    return render_template('categorias-productos/editar.html', form=form, categoria=categoria_data, imagen=imagen)
 
 
 @categorias_productos.route('/eliminar/<int:id>', methods=['POST'])
 def eliminar(id):
-    """Desactivar una categoría (soft delete con validación)"""
     categoria = CategoriaProducto.query.get_or_404(id)
 
     # Validar si ya está inactiva
@@ -159,7 +156,7 @@ def eliminar(id):
         return redirect(url_for('categorias_productos.inicio'))
 
     try:
-        # VALIDAR PRODUCTOS ACTIVOS 
+        # Bloquear si tiene productos activos asociados
         productos_activos = Producto.query.filter_by(
             fk_categoria=id,
             estatus='ACTIVO'
@@ -172,7 +169,7 @@ def eliminar(id):
             )
             return redirect(url_for('categorias_productos.inicio'))
 
-        # ✅ SOFT DELETE
+        # Eliminacion logica
         categoria.estatus = 'INACTIVO'
         categoria.usuario_movimiento = get_user_id()
         categoria.fecha_movimiento = datetime.utcnow()
@@ -187,11 +184,12 @@ def eliminar(id):
         flash(f'Error al desactivar la categoría: {str(e)}', 'error')
         return redirect(url_for('categorias_productos.inicio'))
 
+
 @categorias_productos.errorhandler(404)
 def not_found(error):
-    """Manejar errores 404"""
     flash('La categoría solicitada no existe', 'error')
     return redirect(url_for('categorias_productos.inicio')), 404
+
 
 def obtener_imagen(foto):
     if foto:

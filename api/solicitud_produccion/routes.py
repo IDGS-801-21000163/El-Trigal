@@ -3,34 +3,36 @@ from flask import render_template, request, redirect, url_for, flash
 from sqlalchemy import func
 from models import db, Producto, InventarioProducto, Receta, SolicitudProduccion, CategoriaProducto
 import base64
-from models import db, Producto, InventarioProducto, Receta, SolicitudProduccion
 
 solicitud_produccion = create_module_blueprint("solicitud-produccion")
 
+
 def get_user_id():
     return 1
+
 def get_empleado_id():
     return 1
+
 
 def obtener_imagen_base64(foto):
     if foto:
         imagen = base64.b64encode(foto).decode('utf-8')
         return f"data:image/jpeg;base64,{imagen}"
-    
     return url_for('static', filename='img/defecto.jpg')
+
 
 @solicitud_produccion.route("/")
 def inicio():
-
     buscar = request.args.get("buscar", "", type=str)
     categoria_id = request.args.get("categoria", 0, type=int)
 
     query = Producto.query.filter_by(estatus="ACTIVO")
 
-    # 🔍 filtro por nombre (como módulo productos)
+    # Filtrar por nombre de producto
     if buscar:
         query = query.filter(Producto.nombre.ilike(f"%{buscar}%"))
 
+    # Filtrar por categoría
     if categoria_id > 0:
         query = query.filter_by(fk_categoria=categoria_id)
 
@@ -40,6 +42,7 @@ def inicio():
 
     for producto in productos_db:
 
+        # Solo mostrar productos con receta activa
         receta = Receta.query.filter_by(
             fk_producto=producto.id,
             estatus="ACTIVO"
@@ -48,6 +51,7 @@ def inicio():
         if not receta:
             continue
 
+        # Calcular stock total en inventario
         stock = db.session.query(
             func.coalesce(func.sum(InventarioProducto.cantidad_producto), 0)
         ).filter(
@@ -60,7 +64,7 @@ def inicio():
             "nombre": producto.nombre,
             "precio": float(producto.precio),
             "categoria": producto.categoria.nombre,
-            "categoria_id": producto.fk_categoria,  
+            "categoria_id": producto.fk_categoria,
             "stock": float(stock),
             "imagen": obtener_imagen_base64(producto.foto)
         })
@@ -75,9 +79,9 @@ def inicio():
         categoria_id=categoria_id
     )
 
+
 @solicitud_produccion.route("/agregar", methods=["POST"])
 def agregar():
-
     producto_id = request.form.get("producto_id")
     cantidad = request.form.get("cantidad")
 
@@ -92,7 +96,7 @@ def agregar():
         flash("Producto inválido o inactivo", "error")
         return redirect(url_for("solicitud_produccion.inicio"))
 
-    # Validar receta activa (RF)
+    # Validar que el producto tenga receta activa
     receta = Receta.query.filter_by(
         fk_producto=producto.id,
         estatus="ACTIVO"
@@ -112,33 +116,33 @@ def agregar():
 
     # Crear solicitud
     nueva = SolicitudProduccion(
-    fk_producto=producto.id,
-    fk_empleado=get_empleado_id(),
-    cantidad_solicitada=cantidad,
-    estado="PENDIENTE",
-    usuario_creacion=get_user_id(),
-    usuario_movimiento=get_user_id()
+        fk_producto=producto.id,
+        fk_empleado=get_empleado_id(),
+        cantidad_solicitada=cantidad,
+        estado="PENDIENTE",
+        usuario_creacion=get_user_id(),
+        usuario_movimiento=get_user_id()
     )
 
     db.session.add(nueva)
     db.session.commit()
 
     flash("Solicitud de producción creada correctamente", "success")
-
     return redirect(url_for("solicitud_produccion.inicio"))
 
 
 @solicitud_produccion.route("/detalle")
 def detalle():
-
     estado = request.args.get("estado", "", type=str)
     busqueda = request.args.get("buscar", "", type=str)
 
     query = SolicitudProduccion.query
 
+    # Filtrar por estado
     if estado:
         query = query.filter(SolicitudProduccion.estado == estado)
 
+    # Filtrar por nombre de producto
     if busqueda:
         query = query.join(Producto).filter(
             Producto.nombre.ilike(f"%{busqueda}%")
@@ -146,8 +150,8 @@ def detalle():
 
     ordenes = query.order_by(SolicitudProduccion.fecha_creacion.desc()).all()
 
+    # Construir lista de datos para el template
     ordenes_data = []
-
     for o in ordenes:
         ordenes_data.append({
             "id": o.id,
@@ -157,8 +161,8 @@ def detalle():
         })
 
     return render_template(
-    "solicitud-produccion/detalle.html",
-    ordenes=ordenes_data,
-    estado=estado,
-    buscar=busqueda
+        "solicitud-produccion/detalle.html",
+        ordenes=ordenes_data,
+        estado=estado,
+        buscar=busqueda
     )
