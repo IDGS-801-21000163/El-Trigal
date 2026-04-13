@@ -1,0 +1,139 @@
+{% extends "layout.html" %}
+
+{% block page_title %}
+    {{ module['name'] }}
+{% endblock %}
+
+{% block card_title %}
+    Resumen operativo
+{% endblock %}
+
+{% block content %}
+<section class="dashboard-modern">
+    <form class="toolbar toolbar--wrap dashboard-modern__toolbar" method="GET">
+        <select class="form-input form-input--compact" name="periodo">
+            <option value="7d" {% if dashboard.periodo == '7d' %}selected{% endif %}>Ultimos 7 dias</option>
+            <option value="30d" {% if dashboard.periodo == '30d' %}selected{% endif %}>Ultimos 30 dias</option>
+            <option value="90d" {% if dashboard.periodo == '90d' %}selected{% endif %}>Ultimos 90 dias</option>
+        </select>
+        <button class="btn btn-outline" type="submit">Actualizar</button>
+        <a class="btn btn-outline" href="{{ url_for('dashboard_reportes.exportar', periodo=dashboard.periodo, tipo='resumen') }}">Resumen CSV</a>
+        <a class="btn btn-outline" href="{{ url_for('dashboard_reportes.exportar', periodo=dashboard.periodo, tipo='insumos') }}">Alertas CSV</a>
+        <a class="btn btn-primary" href="{{ url_for('dashboard_reportes.exportar', periodo=dashboard.periodo, tipo='ventas') }}">Ventas CSV</a>
+    </form>
+
+    <section class="dashboard-modern__kpis">
+        <article class="dashboard-kpi">
+            <span>Ventas</span>
+            <strong>${{ '%.2f'|format(dashboard.kpis.ventas) }}</strong>
+            <small>Periodo seleccionado</small>
+        </article>
+        <article class="dashboard-kpi">
+            <span>Compras</span>
+            <strong>${{ '%.2f'|format(dashboard.kpis.compras) }}</strong>
+            <small>Salida a abastecimiento</small>
+        </article>
+        <article class="dashboard-kpi">
+            <span>Balance</span>
+            <strong>${{ '%.2f'|format(dashboard.kpis.balance_operativo) }}</strong>
+            <small>Resultado operativo</small>
+        </article>
+        <article class="dashboard-kpi">
+            <span>Pedidos pendientes</span>
+            <strong>{{ dashboard.kpis.pedidos_pendientes }}</strong>
+            <small>Atención inmediata</small>
+        </article>
+    </section>
+
+    <section class="dashboard-modern__grid">
+        <article class="dashboard-panel dashboard-panel--wide">
+            <div class="table-shell__header">
+                <h2>Ritmo de ventas</h2>
+                <p>Comportamiento del periodo seleccionado</p>
+            </div>
+            {% set total_points = dashboard.ventas_series|length %}
+            <div class="dashboard-line">
+                <svg viewBox="0 0 100 40" preserveAspectRatio="none">
+                    <polyline
+                        fill="none"
+                        stroke="#111111"
+                        stroke-width="2.4"
+                        points="
+                        {% for item in dashboard.ventas_series %}
+                            {{ (loop.index0 * (100 / (total_points - 1 if total_points > 1 else 1)))|round(2) }},{{ 40 - item.height * 0.4 }}
+                            {% if not loop.last %} {% endif %}
+                        {% endfor %}
+                        "
+                    />
+                    {% for item in dashboard.ventas_series %}
+                    <circle cx="{{ (loop.index0 * (100 / (total_points - 1 if total_points > 1 else 1)))|round(2) }}"
+                            cy="{{ 40 - item.height * 0.4 }}"
+                            r="1.6"
+                            fill="#111111" />
+                    {% endfor %}
+                </svg>
+                <div class="dashboard-line__labels">
+                    {% for item in dashboard.ventas_series %}
+                    <span>{{ item.label }}</span>
+                    {% endfor %}
+                </div>
+            </div>
+        </article>
+
+        <article class="dashboard-panel">
+            <div class="table-shell__header">
+                <h2>Producción</h2>
+                <p>Estado actual</p>
+            </div>
+            <div class="dashboard-bars">
+                {% for item in dashboard.produccion_estados %}
+                <div class="dashboard-bar">
+                    <div>
+                        <strong>{{ item.estado }}</strong>
+                        <small>{{ item.total }}</small>
+                    </div>
+                    <div class="dashboard-bar__track">
+                        <span style="width: {{ item.percent }}%"></span>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </article>
+
+        <article class="dashboard-panel">
+            <div class="table-shell__header">
+                <h2>Pedidos</h2>
+                <p>Seguimiento</p>
+            </div>
+            <div class="dashboard-mini-grid">
+                {% for item in dashboard.pedidos_estados %}
+                <div class="dashboard-mini">
+                    <span>{{ item.estado }}</span>
+                    <strong>{{ item.total }}</strong>
+                    <small>{{ item.percent }}%</small>
+                </div>
+                {% endfor %}
+            </div>
+        </article>
+
+        <article class="dashboard-panel">
+            <div class="table-shell__header">
+                <h2>Inventario</h2>
+                <p>Alertas actuales</p>
+            </div>
+            <div class="dashboard-mini-grid">
+                <div class="dashboard-mini">
+                    <span>Insumos críticos</span>
+                    <strong>{{ dashboard.kpis.insumos_criticos }}</strong>
+                    <small>Requieren revisión</small>
+                </div>
+                <div class="dashboard-mini">
+                    <span>Productos activos</span>
+                    <strong>{{ dashboard.kpis.productos_activos }}</strong>
+                    <small>Catálogo vigente</small>
+                </div>
+            </div>
+        </article>
+    </section>
+</section>
+{% endblock %}

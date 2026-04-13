@@ -1,0 +1,95 @@
+{% extends "layout.html" %}
+
+{% block page_title %}{{ module['name'] }}{% endblock %}
+{% block card_title %}Gestión de productos{% endblock %}
+
+{% block content %}
+<div class="toolbar toolbar--wrap">
+    <form method="GET">
+        <input type="text" id="buscador" name="buscar" placeholder="Buscar producto..."
+               value="{{ buscar }}" class="input-search">
+
+        <select id="filtroCategoria" name="categoria" class="form-input" style="max-width:220px;">
+            <option value="0">Todas las categorías</option>
+            {% for cat in categorias %}
+                <option value="{{ cat.id }}" {% if categoria_id == cat.id %}selected{% endif %}>
+                    {{ cat.nombre }}
+                </option>
+            {% endfor %}
+        </select>
+
+        <button class="btn btn-outline" type="submit">
+            Filtrar
+        </button>
+    </form>
+    <div class="toolbar-group">
+        <a href="{{ url_for('productos.agregar') }}" class="btn btn-primary">+ Nuevo</a>
+    </div>
+</div>
+
+<form id="deleteProductoForm" method="POST" style="display:none;">
+    {{ form_eliminar.hidden_tag() }}
+</form>
+
+<section class="module-grid">
+{% for producto in productos %}
+<article class="employee-card employee-card--uniform searchable"
+     data-nombre="{{ producto.nombre }}"
+     data-categoria="{{ producto.categoria }}">
+    <div class="employee-header">
+        <img src="{{ producto.imagen }}" alt="{{ producto.nombre }}" class="avatar-img">
+        <div class="employee-main">
+            <h2 class="employee-name">{{ producto.nombre }}</h2>
+            <p class="employee-role">{{ producto.categoria }}</p>
+        </div>
+    </div>
+
+    <div class="employee-body">
+        <div class="employee-meta"><span>Precio:</span> ${{ "%.2f"|format(producto.precio) }}</div>
+        <div class="employee-meta"><span>Costo:</span> ${{ "%.2f"|format(producto.costo) }}</div>
+        <div class="employee-meta"><span>Inventario:</span> {{ "Con existencia" if producto.tiene_inventario else "Sin existencias activas" }}</div>
+    </div>
+
+    <div class="employee-actions employee-actions--stack-mobile">
+        <a href="{{ url_for('productos.detalle', id=producto.id) }}" class="btn btn-outline">Ver</a>
+        <a href="{{ url_for('productos.editar', id=producto.id) }}" class="btn btn-primary">Editar</a>
+        {% if producto.tiene_inventario %}
+        <button type="button" class="btn btn-outline btn-full-row" disabled>No disponible</button>
+        {% else %}
+        <button
+            type="button"
+            class="btn btn-danger-outline btn-full-row js-delete-product"
+            data-url="{{ url_for('productos.eliminar', id=producto.id) }}"
+            data-name="{{ producto.nombre }}">
+            Eliminar
+        </button>
+        {% endif %}
+    </div>
+</article>
+{% else %}
+<p class="empty-state">No hay productos registrados.</p>
+{% endfor %}
+</section>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+    const form = document.getElementById("deleteProductoForm");
+
+    document.querySelectorAll(".js-delete-product").forEach((button) => {
+        button.addEventListener("click", async () => {
+            const result = await window.showConfirmDialog({
+                title: "Eliminar producto",
+                text: `Se eliminará "${button.dataset.name}".`,
+                confirmText: "Sí, eliminar"
+            });
+
+            if (result.isConfirmed) {
+                form.action = button.dataset.url;
+                form.submit();
+            }
+        });
+    });
+});
+</script>
+
+{% endblock %}

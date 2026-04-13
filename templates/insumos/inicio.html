@@ -1,0 +1,71 @@
+{% extends "layout.html" %}
+
+{% block page_title %}
+    {{ module['name'] }}
+{% endblock %}
+
+{% block card_title %}
+    Gestión de {{ module['name'] }}
+{% endblock %}
+
+{% block content %}
+<section class="module-dashboard">
+
+    <div class="toolbar toolbar--wrap">
+        <form method="GET">
+            <input class="input-search" type="text" name="buscar" value="{{ buscar }}" placeholder="Buscar insumo...">
+            <select class="form-input form-input--compact" name="categoria">
+                <option value="0">Todas las categorias</option>
+                {% for categoria in categorias %}
+                <option value="{{ categoria.id }}" {% if categoria_id == categoria.id %}selected{% endif %}>{{ categoria.nombre }}</option>
+                {% endfor %}
+            </select>
+            <select class="form-input form-input--compact" name="stock">
+                <option value="">Todos los estados</option>
+                {% for option in ['DISPONIBLE', 'STOCK BAJO', 'SIN EXISTENCIA', 'CADUCADO', 'SIN REGISTRO'] %}
+                <option value="{{ option }}" {% if estado_stock == option %}selected{% endif %}>{{ option }}</option>
+                {% endfor %}
+            </select>
+            <button class="btn btn-outline" type="submit">Filtrar</button>
+        </form>
+        <div class="toolbar-group">
+            <a href="{{ url_for('insumos.agregar') }}" class="btn btn-primary">+ Nuevo insumo</a>
+        </div>
+    </div>
+
+    <section class="module-grid">
+        {% for item in insumos_data %}
+        <article class="employee-card">
+            <div class="inventory-card__media">
+                {% if item.imagen %}
+                <img src="{{ item.imagen }}" alt="{{ item.insumo.nombre }}">
+                {% else %}
+                <div class="inventory-card__placeholder">INS</div>
+                {% endif %}
+            </div>
+            <div class="employee-main">
+                <h2 class="employee-name">{{ item.insumo.nombre }}</h2>
+                <p class="employee-role">{{ item.insumo.categoria.nombre }}</p>
+            </div>
+            <div class="employee-body">
+                <div class="employee-meta"><span>Merma:</span> {{ '%.2f'|format(item.insumo.porcentaje_merma or 0) }}%</div>
+                <div class="employee-meta"><span>Existencia total:</span> {{ '%.2f'|format(item.existencia.total) }}</div>
+                <div class="employee-meta"><span>Estado:</span> {{ item.existencia.estado }}</div>
+                <div class="employee-meta"><span>Compras:</span> {{ item.compras }}</div>
+                <div class="employee-meta"><span>Recetas:</span> {{ item.recetas }}</div>
+            </div>
+            <div class="employee-actions employee-actions--stack-mobile">
+                <a href="{{ url_for('insumos.detalle', id=item.insumo.id) }}" class="btn btn-outline">Detalle</a>
+                <a href="{{ url_for('insumos.editar', id=item.insumo.id) }}" class="btn btn-primary">Editar</a>
+                <a href="{{ url_for('insumos.eliminar', id=item.insumo.id) }}"
+                   class="btn {% if item.insumo.estatus == 'ACTIVO' %}btn-danger-outline{% else %}btn-outline{% endif %} btn-full-row">
+                    {{ 'Eliminar' if item.insumo.estatus == 'ACTIVO' else 'Activar' }}
+                </a>
+            </div>
+        </article>
+        {% else %}
+        <p class="empty-state">No hay insumos registrados.</p>
+        {% endfor %}
+    </section>
+</section>
+{% endblock %}

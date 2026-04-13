@@ -1,0 +1,85 @@
+{% extends "layout.html" %}
+
+{% block page_title %}
+    {{ module['name'] }}
+{% endblock %}
+
+{% block card_title %}
+    Gestión de {{ module['name'] }}
+{% endblock %}
+
+{% block content %}
+
+{% set endpoint = module['slug']|replace('-', '_') %}
+
+<!-- TOOLBAR -->
+<div class="toolbar toolbar--wrap">
+    <form method="GET">
+        <input
+            class="input-search"
+            type="text"
+            name="buscar"
+            value="{{ buscar or '' }}"
+            placeholder="Buscar insumo...">
+        <button class="btn btn-outline" type="submit">Buscar</button>
+    </form>
+</div>
+
+<!-- GRID -->
+<section class="module-grid">
+
+    {% for item in module['items'] %}
+
+    <article class="employee-card searchable"
+        data-nombre="{{ item.insumo.nombre }}"
+        data-unidad="{{ item.unidad.nombre if item.unidad else '' }}">
+
+        <!-- ICONO -->
+        <div style="display:flex; justify-content:center;">
+            <div class="puesto-icon">🧂</div>
+        </div>
+
+        <!-- INFO -->
+        <div style="text-align:center;">
+            <h2 class="employee-name">{{ item.insumo.nombre }}</h2>
+            <p class="employee-role">{{ item.insumo.categoria.nombre }}</p>
+        </div>
+
+        <!-- CANTIDAD -->
+        <div style="text-align:center;">
+            <span class="puesto-sueldo">
+                {{ ('%.2f'|format(item.cantidad|float)).rstrip('0').rstrip('.') }} {{ item.unidad.nombre if item.unidad else '' }}
+            </span>
+        </div>
+
+        <!-- ESTATUS -->
+        <div style="display:flex; justify-content:center;">
+            <span class="status-badge
+                {% if item.estatus == 'DISPONIBLE' %}active
+                {% elif item.estatus == 'CADUCADO' %}warning
+                {% else %}inactive{% endif %}">
+                {{ item.estatus }}
+            </span>
+        </div>
+
+        <!-- ACCIONES -->
+        <div class="employee-actions">
+            <a href="{{ url_for(endpoint ~ '.editar', id=item.id) }}"
+               class="btn btn-primary">
+                Ajustar cantidad
+            </a>
+        </div>
+
+    </article>
+
+    {% else %}
+    <p style="text-align:center; width:100%;">No hay insumos registrados</p>
+    {% endfor %}
+
+</section>
+
+<script>
+// Busqueda migrada a servidor via ?buscar=...
+</script>
+
+{% endblock %}

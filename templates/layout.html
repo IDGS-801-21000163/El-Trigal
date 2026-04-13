@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" href="{{ url_for('static', filename='img/logoTrigal.png') }}">
+    <title>El Trigal — Sistema de Panadería</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Montserrat:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet" />
+    <link href="{{url_for('static', filename='css/layout.css')}}" rel="stylesheet">
+    <link href="{{url_for('static', filename='css/styles.css')}}" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/output.css') }}" rel="stylesheet">
+    {% block extra_head %}{% endblock %}
+
+</head>
+
+<body>
+    {% block container %}
+        <div class="app-shell">
+            <aside class="app-sidebar">
+                <a class="app-sidebar__brand" href="{{ url_for('panel') }}">
+                    <img src="{{ url_for('static', filename='img/logoTrigal.png') }}" alt="El Trigal Logo">
+                    <div>
+                        <strong>EL TRIGAL</strong>
+                        <span>MX. 2026</span>
+                    </div>
+                </a>
+                {% set groups = [
+                    {"title": "General", "slugs": ["dashboard-reportes", "usuarios", "puestos", "empleados", "proveedores", "sucursales", "clientes"]},
+                    {"title": "Insumos", "slugs": ["categorias-insumos", "insumos", "compras", "inventario-insumos"]},
+                    {"title": "Productos", "slugs": ["categorias-productos", "recetas", "productos", "inventario-productos", "costo-producto"]},
+                    {"title": "Operación", "slugs": ["produccion", "solicitud-produccion", "pedidos", "ventas", "pos"]}
+                ] %}
+                <nav class="app-sidebar__nav">
+                    {% for group in groups %}
+                    <details class="app-sidebar__group" open data-group="{{ group.title }}">
+                        <summary class="app-sidebar__group-title">{{ group.title }}</summary>
+                        <div class="app-sidebar__group-list">
+                            {% for slug in group.slugs %}
+                                {% set item = (nav_modules | selectattr('slug', 'equalto', slug) | first) %}
+                                {% if item %}
+                                    {% set endpoint_prefix = item.slug | replace('-', '_') %}
+                                    <a href="{{ url_for(endpoint_prefix ~ '.inicio') }}"
+                                       data-nav-slug="{{ item.slug }}"
+                                       class="{% if request.endpoint and request.endpoint.startswith(endpoint_prefix) %}active{% endif %}">
+                                        {{ item.name }}
+                                    </a>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                    </details>
+                    {% endfor %}
+                </nav>
+            </aside>
+
+            <main class="app-main">
+                <header class="app-header">
+                    <div class="app-header__row">
+                        <h1 class="page-title">{% block page_title %}TITULO{% endblock %}</h1>
+                        {% if usuario_sesion %}
+                        <div class="app-actions">
+                            <div class="user-chip">
+                                <span class="user-chip__eyebrow">Sesión activa</span>
+                                <strong>{{ usuario_sesion.nombre or usuario_sesion.nick }}</strong>
+                                <small>{{ usuario_sesion.rol or "Usuario" }}</small>
+                            </div>
+                            <a href="{{ url_for('logout') }}" class="btn btn-outline">Cerrar sesión</a>
+                        </div>
+                        {% endif %}
+                    </div>
+                </header>
+
+                <div class="page-body">
+                    {% with messages = get_flashed_messages(with_categories=true) %}
+                        {% if messages %}
+                            <div id="flash-data" data-messages='{{ messages | tojson }}' hidden></div>
+                        {% endif %}
+                    {% endwith %}
+                    <div class="card">
+                        <div class="card-header">
+                            <span class="card-title">{% block card_title %}TITULO CARD{% endblock %}</span>
+                        </div>
+                        <div class="card-body">
+                            {% block content %}{% endblock %}
+                        </div>
+                    </div>
+                </div>
+
+                <footer class="app-footer">
+                    EL TRIGAL · SISTEMA DE GESTIÓN
+                </footer>
+            </main>
+        </div>
+    {% endblock %}
+
+    <div id="app-modal" class="app-modal" hidden>
+        <div class="app-modal__backdrop"></div>
+        <div class="app-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="app-modal-title">
+            <img
+                id="app-modal-logo"
+                class="app-modal__logo"
+                src="{{ url_for('static', filename='img/logoTrigal.png') }}"
+                alt="El Trigal">
+            <h2 id="app-modal-title" class="app-modal__title"></h2>
+            <p id="app-modal-message" class="app-modal__message"></p>
+            <p id="app-modal-item" class="app-modal__item" hidden></p>
+            <div id="app-modal-input-wrap" class="app-modal__input-wrap" hidden>
+                <label id="app-modal-input-label" class="app-modal__input-label" for="app-modal-input"></label>
+                <input id="app-modal-input" class="app-modal__input" />
+                <p id="app-modal-error" class="app-modal__error" hidden></p>
+            </div>
+            <div class="app-modal__actions">
+                <button type="button" id="app-modal-confirm" class="app-modal__button app-modal__button--confirm"></button>
+                <button type="button" id="app-modal-cancel" class="app-modal__button app-modal__button--cancel"></button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const groups = document.querySelectorAll(".app-sidebar__group");
+            groups.forEach(group => {
+                const key = `sidebar:${group.dataset.group}`;
+                const saved = localStorage.getItem(key);
+                if (saved === "closed") {
+                    group.removeAttribute("open");
+                } else if (saved === "open") {
+                    group.setAttribute("open", "");
+                }
+                group.addEventListener("toggle", () => {
+                    localStorage.setItem(key, group.open ? "open" : "closed");
+                });
+            });
+        });
+    </script>
+
+    <script src="{{ url_for('static', filename='js/searchable-select.js') }}"></script>
+    {% block extra_scripts %}{% endblock %}
+    <script>
+    (() => {
+        const modal = document.getElementById("app-modal");
+        const title = document.getElementById("app-modal-title");
+        const message = document.getElementById("app-modal-message");
+        const item = document.getElementById("app-modal-item");
+        const inputWrap = document.getElementById("app-modal-input-wrap");
+        const inputLabel = document.getElementById("app-modal-input-label");
+        const input = document.getElementById("app-modal-input");
+        const error = document.getElementById("app-modal-error");
+        const confirmBtn = document.getElementById("app-modal-confirm");
+        const cancelBtn = document.getElementById("app-modal-cancel");
+        let activeResolver = null;
+
+        function forceCloseModal(result = { isConfirmed: false }) {
+            modal.hidden = true;
+            confirmBtn.onclick = null;
+            cancelBtn.onclick = null;
+            if (activeResolver) {
+                const resolver = activeResolver;
+                activeResolver = null;
+                resolver(result);
+            }
+        }
+
+        function openModal(config) {
+            return new Promise((resolve) => {
+                activeResolver = resolve;
+                title.textContent = config.title || "Confirmar acción";
+                message.textContent = config.text || "";
+
+                if (config.itemText) {
+                    item.hidden = false;
+                    item.textContent = config.itemText;
+                } else {
+                    item.hidden = true;
+                    item.textContent = "";
+                }
+
+                if (config.input) {
+                    inputWrap.hidden = false;
+                    inputLabel.textContent = config.inputLabel || "";
+                    input.type = config.input.type || "text";
+                    input.min = config.input.min ?? "";
+                    input.step = config.input.step ?? "";
+                    input.value = config.input.value ?? "";
+                } else {
+                    inputWrap.hidden = true;
+                    input.value = "";
+                    input.type = "text";
+                    input.min = "";
+                    input.step = "";
+                }
+
+                error.hidden = true;
+                error.textContent = "";
+                confirmBtn.textContent = config.confirmText || "Continuar";
+                cancelBtn.textContent = config.cancelText || "Cancelar";
+                cancelBtn.hidden = config.hideCancel === true;
+                confirmBtn.classList.toggle("app-modal__button--danger", config.variant === "danger");
+                modal.hidden = false;
+
+                const close = (result) => {
+                    forceCloseModal(result);
+                };
+
+                confirmBtn.onclick = () => {
+                    if (config.input) {
+                        const rawValue = input.value;
+                        const validator = config.input.validate;
+                        const validationMessage = validator ? validator(rawValue) : "";
+                        if (validationMessage) {
+                            error.hidden = false;
+                            error.textContent = validationMessage;
+                            input.focus();
+                            return;
+                        }
+                        close({ isConfirmed: true, value: rawValue });
+                        return;
+                    }
+                    close({ isConfirmed: true });
+                };
+
+                cancelBtn.onclick = () => close({ isConfirmed: false });
+            });
+        }
+
+        window.showConfirmDialog = function(config) {
+            return openModal({
+                ...config,
+                variant: config.variant || "danger"
+            });
+        };
+
+        window.showInfoDialog = function(config) {
+            return openModal({
+                ...config,
+                confirmText: config.confirmText || "Aceptar",
+                hideCancel: true,
+                variant: "info"
+            });
+        };
+
+        window.showInputDialog = function(config) {
+            return openModal(config);
+        };
+
+        window.closeAppModal = forceCloseModal;
+
+        document.addEventListener("DOMContentLoaded", async () => {
+            const flashEl = document.getElementById("flash-data");
+            if (!flashEl) return;
+            const mensajes = JSON.parse(flashEl.dataset.messages || "[]");
+            for (const [category, text] of mensajes) {
+                const variant = category === "success" ? "info" : "danger";
+                await window.showInfoDialog({
+                    title: category === "success" ? "Operación completada" : "Atención",
+                    text,
+                    confirmText: "Entendido",
+                    variant
+                });
+            }
+        });
+
+        document.addEventListener("DOMContentLoaded", () => {
+            const sidebar = document.getElementById("sidebar");
+            const activeLink = document.querySelector("#main-nav a.active");
+            if (!sidebar) return;
+
+            const storageKey = "panaderia.sidebar.scrollTop";
+            const savedTop = sessionStorage.getItem(storageKey);
+
+            if (savedTop !== null) {
+                sidebar.scrollTop = Number(savedTop);
+            }
+
+            if (activeLink) {
+                const sidebarRect = sidebar.getBoundingClientRect();
+                const activeRect = activeLink.getBoundingClientRect();
+                const hiddenAbove = activeRect.top < sidebarRect.top;
+                const hiddenBelow = activeRect.bottom > sidebarRect.bottom;
+
+                if (hiddenAbove || hiddenBelow) {
+                    activeLink.scrollIntoView({ block: "nearest", inline: "nearest" });
+                }
+            }
+
+            sidebar.addEventListener("scroll", () => {
+                sessionStorage.setItem(storageKey, String(sidebar.scrollTop));
+            }, { passive: true });
+        });
+
+        document.addEventListener("click", (event) => {
+            const link = event.target.closest("a[href]");
+            if (!link) return;
+            forceCloseModal({ isConfirmed: false, dismissedByNavigation: true });
+        }, true);
+
+        window.addEventListener("beforeunload", () => {
+            forceCloseModal({ isConfirmed: false, dismissedByNavigation: true });
+        });
+    })();
+    </script>
+</body>
+
+</html>

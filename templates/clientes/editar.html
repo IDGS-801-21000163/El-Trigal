@@ -1,0 +1,31 @@
+{% extends "layout.html" %}
+{% from "macros/forms.html" import render_input, render_image_input, render_flash %}
+
+{% block page_title %}Clientes{% endblock %}
+{% block card_title %}Editar cliente{% endblock %}
+
+{% block content %}
+
+{{ render_flash() }}
+
+<form method="POST" enctype="multipart/form-data" class="form-container">
+
+    {{ form.hidden_tag() }}
+
+    <div class="form-grid">
+        {{ render_input(form.nombre) }}
+        {{ render_input(form.apellido_paterno) }}
+        {{ render_input(form.apellido_materno) }}
+        {{ render_input(form.telefono) }}
+        {{ render_input(form.correo) }}
+        {{ render_image_input(form.foto, imagen) }}
+    </div>
+
+    <div class="button-row">
+        <button class="btn btn-primary">Actualizar</button>
+        <a href="{{ url_for('clientes.inicio') }}" class="btn btn-outline">Regresar</a>
+    </div>
+
+</form>
+
+{% endblock %}

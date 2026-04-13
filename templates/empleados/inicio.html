@@ -1,0 +1,103 @@
+{% extends "layout.html" %}
+
+{% block page_title %}
+    Empleados
+{% endblock %}
+
+{% block card_title %}
+    Gestión de empleados
+{% endblock %}
+
+{% block content %}
+
+{% set endpoint = module['slug']|replace('-', '_') %}
+
+<!-- ── ACCIONES SUPERIORES ── -->
+<div class="toolbar toolbar--wrap">
+    <form method="GET">
+        <input
+            class="input-search"
+            type="text"
+            name="buscar"
+            value="{{ buscar or '' }}"
+            placeholder="Buscar empleado...">
+        <button class="btn btn-outline" type="submit">Buscar</button>
+    </form>
+
+    <div class="toolbar-group">
+        <a href="{{ url_for(endpoint ~ '.agregar') }}" class="btn btn-primary">+ Nuevo</a>
+    </div>
+</div>
+
+<!-- ── GRID ── -->
+<section class="module-grid">
+
+    {% for item in module['items'] %}
+    
+    <article class="employee-card employee-card--uniform searchable"
+    data-nombre="{{ (item.persona.nombre ~ ' ' ~ item.persona.apellido_uno) if item.persona else 'Sin persona' }}"
+    data-puesto="{{ item.puesto.nombre if item.puesto else '' }}"
+    data-usuario="{{ item.usuario.nick if item.usuario else '' }}">
+
+            <span class="status-badge {{ 'active' if item.estatus == 'ACTIVO' else 'inactive' }}">{{ item.estatus }}</span>
+        <!-- HEADER -->
+        <div class="employee-header">
+    
+    {% if item.persona and item.persona.foto %}
+        <img src="{{ item.persona.foto }}" class="avatar-img">
+    {% else %}
+        <div class="avatar">
+            {{ item.persona.nombre[0] if item.persona and item.persona.nombre else '?' }}
+        </div>
+    {% endif %}
+
+            <div class="employee-main">
+                <h2 class="employee-name">
+                    {{ item.persona.nombre ~ ' ' ~ item.persona.apellido_uno if item.persona else 'Empleado sin persona asociada' }}
+                </h2>
+
+                <p class="employee-role">
+                    {{ item.puesto.nombre if item.puesto else 'Sin puesto' }}
+                </p>
+            </div>
+
+        </div>
+
+        <!-- BODY -->
+        <div class="employee-body">
+
+            <div class="employee-meta">
+                <span>ID:</span> {{ item.num_empleado }}
+            </div>
+
+            <div class="employee-meta">
+    <span>Usuario:</span>
+    {{ item.persona.usuario.nick if item.persona and item.persona.usuario else 'Sin usuario' }}
+</div>
+
+            <div class="employee-meta"><span>Estatus:</span> {{ item.estatus }}</div>
+            
+        </div>
+
+        <!-- FOOTER -->
+        <div class="employee-actions">
+            <a href="{{ url_for(endpoint ~ '.detalle', id=item.id) }}" class="btn btn-outline">
+                Ver
+            </a>
+
+            <a href="{{ url_for(endpoint ~ '.editar', id=item.id) }}" class="btn btn-primary">
+                Editar
+            </a>
+        </div>
+
+    </article>
+
+    {% endfor %}
+
+</section>
+
+<script>
+// Busqueda migrada a servidor via ?buscar=...
+</script>
+
+{% endblock %}

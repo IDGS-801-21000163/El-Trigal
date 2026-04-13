@@ -1,0 +1,110 @@
+{% extends "layout.html" %}
+
+{% block page_title %}Corte de Caja{% endblock %}
+{% block card_title %}Resumen de caja{% endblock %}
+
+{% block content %}
+<section class="cashcut-shell">
+    <section class="cashcut-hero">
+        <div class="cashcut-hero__copy">
+            <span class="dashboard-chip">{% if modo_consulta %}Consulta histórica{% else %}Cierre operativo{% endif %}</span>
+            <h2>{% if modo_consulta %}Último corte de caja{% else %}Corte de caja del turno actual{% endif %}</h2>
+            <p>
+                {% if modo_consulta %}
+                Estás viendo la última caja cerrada registrada. Este resumen es solo de consulta.
+                {% else %}
+                Revisa el rendimiento del punto de venta y confirma el cierre operativo de la caja actual.
+                {% endif %}
+            </p>
+        </div>
+
+        <div class="cashcut-hero__meta">
+            <div>
+                <span>Caja</span>
+                <strong>#{{ caja.id }}</strong>
+            </div>
+            <div>
+                <span>Apertura</span>
+                <strong>{{ caja.fecha_apertura.strftime('%d/%m/%Y %H:%M') if caja.fecha_apertura else '-' }}</strong>
+            </div>
+            <div>
+                <span>Cierre</span>
+                <strong>{{ caja.fecha_cierre.strftime('%d/%m/%Y %H:%M') if caja.fecha_cierre else 'Abierta' }}</strong>
+            </div>
+        </div>
+    </section>
+
+    <section class="cashcut-kpis">
+        <article class="summary-card summary-card--featured">
+            <small>Total ventas</small>
+            <strong>${{ '%.2f'|format(total_ventas|float) }}</strong>
+        </article>
+        <article class="summary-card">
+            <small>Efectivo</small>
+            <strong>${{ '%.2f'|format(efectivo|float) }}</strong>
+        </article>
+        <article class="summary-card">
+            <small>Tarjeta</small>
+            <strong>${{ '%.2f'|format(tarjeta|float) }}</strong>
+        </article>
+        <article class="summary-card">
+            <small>Transferencia</small>
+            <strong>${{ '%.2f'|format(transferencia|float) }}</strong>
+        </article>
+    </section>
+
+    <section class="cashcut-detail-card">
+        <div class="cashcut-detail-card__header">
+            <div>
+                <h3>Detalle de ventas</h3>
+                <p>{{ ventas|length }} tickets registrados durante la caja.</p>
+            </div>
+            <div class="button-row">
+                <a href="{{ url_for('pos.inicio') }}" class="btn btn-outline">Volver al POS</a>
+                {% if not modo_consulta %}
+                <a href="{{ url_for('pos.cerrar_caja') }}" class="btn btn-danger-outline">Confirmar cierre</a>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="cashcut-sales-list">
+            {% for venta in ventas %}
+            <article class="cashcut-sale-item">
+                <div class="cashcut-sale-item__top">
+                    <div>
+                        <strong>Ticket #{{ venta.folio }}</strong>
+                        <p>{{ venta.fecha.strftime('%d/%m/%Y %H:%M') if venta.fecha else '-' }}</p>
+                    </div>
+                    <div class="cashcut-sale-item__amount">
+                        ${{ '%.2f'|format(venta.total|float) }}
+                    </div>
+                </div>
+
+                <div class="cashcut-sale-item__body">
+                    <div>
+                        <span class="cashcut-sale-item__label">Productos</span>
+                        <ul>
+                            {% for item in venta["items"] %}
+                            <li>{{ item.nombre }} x{{ item.cantidad }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    <div>
+                        <span class="cashcut-sale-item__label">Pago</span>
+                        <div class="cashcut-payment-tags">
+                            {% for payment in venta["payments"] %}
+                            <span class="status-badge {% if payment|lower == 'efectivo' %}active{% elif payment|lower == 'tarjeta' %}warning{% else %}danger{% endif %}">
+                                {{ payment }}
+                            </span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </article>
+            {% else %}
+            <p class="empty-state">No hay ventas registradas para esta caja.</p>
+            {% endfor %}
+        </div>
+    </section>
+</section>
+{% endblock %}

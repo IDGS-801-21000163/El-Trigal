@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Ticket</title>
+
+<script src="https://cdn.tailwindcss.com"></script>
+
+<style>
+body {
+    background: #e5e7eb;
+    overflow-x: hidden;
+}
+
+/* ANIMACIÓN DE SALIDA */
+.ticket-container {
+    transform: translateY(-400px);
+    animation: salir 0.8s ease-out forwards;
+}
+
+@keyframes salir {
+    to {
+        transform: translateY(0);
+    }
+}
+
+/* PAPEL */
+.ticket-paper {
+    background: white;
+    width: 300px;
+    padding: 16px;
+    font-family: monospace;
+    position: relative;
+}
+
+/* EFECTO CORTE */
+.ticket-paper::before,
+.ticket-paper::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    width: 100%;
+    height: 10px;
+    background: radial-gradient(circle, #e5e7eb 50%, transparent 50%);
+    background-size: 10px 10px;
+}
+
+.ticket-paper::before { top: -10px; }
+.ticket-paper::after { bottom: -10px; }
+
+@media print {
+    body { background: white; }
+    .no-print { display: none; }
+}
+</style>
+</head>
+
+<body class="flex justify-center py-10">
+
+<div class="ticket-container">
+
+<div class="ticket-paper shadow-lg rounded-sm text-xs">
+
+    <!-- HEADER -->
+    <div class="flex items-center justify-center gap-2 mb-2">
+        <img src="/static/img/logoTrigal.png" class="w-10 h-10">
+        <div class="text-center">
+            <p class="font-bold text-sm">PANADERÍA EL TRIGAL</p>
+            <p>{{ venta.sucursal.nombre }}</p>
+        </div>
+    </div>
+
+    <div class="text-center text-[10px]">
+        <p>{{ venta.sucursal.direccion.calle }} </p>
+        <p>{{ venta.sucursal.direccion.colonia }}</p>
+        <p>{{ venta.sucursal.direccion.municipio.nombre }}, {{ venta.sucursal.direccion.estado.nombre }}</p>
+        <p>Tel: {{ venta.sucursal.telefono }}</p>
+    </div>
+
+    <p class="text-center my-2">------------------------------</p>
+
+    <!-- INFO -->
+    <p>Folio: {{ venta.folio_ticket }}</p>
+    <p>Fecha: {{ venta.fecha_creacion.strftime('%d/%m/%Y %H:%M') }}</p>
+    <p>Emp: {{ venta.empleado.persona.nombre }}</p>
+    <p>Cli: {{ venta.cliente.persona.nombre }}</p>
+
+    <p class="text-center my-2">------------------------------</p>
+
+    <!-- PRODUCTOS -->
+    {% for d in detalles %}
+    <div>
+        <p>{{ d.producto.nombre }}</p>
+        <div class="flex justify-between">
+            <span>{{ d.cantidad_producto }} x {{ "%.2f"|format(d.precio_unitario) }}</span>
+            <span>${{ "%.2f"|format(d.subtotal) }}</span>
+        </div>
+    </div>
+    {% endfor %}
+
+    <p class="text-center my-2">------------------------------</p>
+
+    <!-- TOTAL -->
+    <div class="flex justify-between font-bold">
+        <span>TOTAL:</span>
+        <span>${{ "%.2f"|format(venta.total) }}</span>
+    </div>
+
+    <p class="text-center my-2">------------------------------</p>
+
+    <!-- PAGOS -->
+    {% for p in pagos %}
+    <div>
+
+        <p>{{ p.metodo_pago.nombre }}:</p>
+        <p>${{ "%.2f"|format(p.monto_pagado) }}</p>
+
+        {% set metodo = p.metodo_pago.nombre.lower() %}
+        {% set folio = venta.folio_ticket|string %}
+
+        <!-- EFECTIVO -->
+        {% if metodo == "efectivo" %}
+            <p>Recibido: ${{ recibido if recibido else "0.00" }}</p>
+            <p>Cambio: ${{ cambio if cambio else "0.00" }}</p>
+        {% endif %}
+
+        <!-- TARJETA -->
+        {% if metodo == "tarjeta" %}
+            <p>**** **** **** {{ folio[-4:] }}</p>
+            <p class="text-gray-400 text-[10px]">APROB: {{ venta.folio_ticket }}</p>
+        {% endif %}
+
+        <!-- TRANSFERENCIA -->
+        {% if metodo == "transferencia" %}
+            <p>REF: TRX-{{ venta.folio_ticket }}</p>
+            <p class="text-gray-400 text-[10px]">BANCO: BBVA</p>
+        {% endif %}
+
+    </div>
+    {% endfor %}
+
+    <p class="text-center my-2">------------------------------</p>
+
+    <!-- FOOTER -->
+    <div class="text-center">
+        <p>GRACIAS POR SU COMPRA</p>
+        <p>VUELVA PRONTO</p>
+    </div>
+
+    <!-- BOTONES -->
+    <div class="mt-4 flex flex-col gap-2 no-print">
+
+        <button onclick="window.print()"
+            class="bg-black text-white py-2 rounded">
+         Imprimir
+        </button>
+
+        <a href="{{ url_for('pos.inicio') }}"
+            class="bg-gray-500 text-white py-2 rounded text-center">
+            Volver
+        </a>
+
+    </div>
+
+</div>
+
+</div>
+
+</body>
+</html>

@@ -1,0 +1,43 @@
+{% extends "layout.html" %}
+
+{% block page_title %}{{ module['name'] }}{% endblock %}
+{% block card_title %}Detalle de categoría{% endblock %}
+
+{% block content %}
+<section class="table-shell">
+    <div class="table-shell__header">
+        <h3>Resumen de la categoría</h3>
+        <p>Consulta la información principal de la categoría comercial.</p>
+    </div>
+
+    <div class="table-shell__body compras-form-shell">
+        <div class="detail-header">
+            <div class="detail-avatar placeholder detail-avatar--square">CAT</div>
+            <div>
+                <h2 class="detail-name">{{ categoria.nombre }}</h2>
+                <p class="detail-role">Categoría activa de productos</p>
+            </div>
+        </div>
+
+        <div class="detail-grid">
+            <div class="detail-item">
+                <span>ID</span>
+                <strong>#{{ categoria.id }}</strong>
+            </div>
+            <div class="detail-item">
+                <span>Nombre</span>
+                <strong>{{ categoria.nombre }}</strong>
+            </div>
+            <div class="detail-item detail-item--full">
+                <span>Descripción</span>
+                <strong>{{ categoria.descripcion }}</strong>
+            </div>
+        </div>
+
+        <div class="button-row">
+            <a href="{{ url_for('categorias_productos.editar', id=categoria.id) }}" class="btn btn-primary">Editar</a>
+            <a href="{{ url_for('categorias_productos.inicio') }}" class="btn btn-outline">Volver</a>
+        </div>
+    </div>
+</section>
+{% endblock %}

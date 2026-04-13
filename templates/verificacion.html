@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verificacion | El Trigal</title>
+    <link rel="icon" href="{{ url_for('static', filename='img/logoTrigal.png') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body class="auth-body">
+    <header class="auth-header">
+        <a class="auth-brand" href="{{ url_for('landing') }}">
+            <img src="{{ url_for('static', filename='img/logoTrigal.png') }}" alt="El Trigal">
+            <div>
+                <strong>EL TRIGAL</strong>
+                <span>MX. 2026</span>
+            </div>
+        </a>
+        <nav class="auth-nav">
+            <a href="{{ url_for('landing') }}">Catálogo</a>
+            <a href="{{ url_for('landing') }}#sucursales">Sucursales</a>
+        </nav>
+    </header>
+
+    <main class="auth-shell">
+        <section class="auth-card auth-card--minimal auth-card--otp">
+            <div class="auth-title-group">
+                <h1>Verificación de identidad</h1>
+                <span class="auth-title-line"></span>
+            </div>
+            <p class="auth-subtitle">
+                Vamos a enviar un código de verificación a tu correo:
+                <strong>{{ correo_mascara }}</strong>
+            </p>
+
+                {% with mensajes = get_flashed_messages(with_categories=true) %}
+                    {% if mensajes %}
+                        <div class="auth-flash-group">
+                            {% for categoria, mensaje in mensajes %}
+                                <div class="auth-flash auth-flash--{{ categoria }}">{{ mensaje }}</div>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                {% endwith %}
+
+                <form class="otp-form otp-form--minimal" action="{{ url_for('verificacion') }}" method="post">
+                    {{ form.hidden_tag() }}
+
+                    <div class="otp-boxes">
+                        {{ form.digito_1(class="otp-input", inputmode="numeric", pattern="[0-9]*", autocomplete="one-time-code", maxlength="1") }}
+                        {{ form.digito_2(class="otp-input", inputmode="numeric", pattern="[0-9]*", maxlength="1") }}
+                        {{ form.digito_3(class="otp-input", inputmode="numeric", pattern="[0-9]*", maxlength="1") }}
+                        {{ form.digito_4(class="otp-input", inputmode="numeric", pattern="[0-9]*", maxlength="1") }}
+                        {{ form.digito_5(class="otp-input", inputmode="numeric", pattern="[0-9]*", maxlength="1") }}
+                    </div>
+
+                    {% for field in [form.digito_1, form.digito_2, form.digito_3, form.digito_4, form.digito_5] %}
+                        {% for error in field.errors %}
+                            <p class="auth-error auth-error--center">{{ error }}</p>
+                        {% endfor %}
+                    {% endfor %}
+
+                    <div class="otp-actions otp-actions--minimal">
+                        <a class="secondary-button secondary-button--ghost secondary-button--full" href="{{ url_for('cancelar_verificacion') }}">Cancelar</a>
+                        <button class="primary-button primary-button--full" type="submit">Verificar</button>
+                    </div>
+                </form>
+        </section>
+    </main>
+
+    <script>
+        const otpInputs = Array.from(document.querySelectorAll('.otp-input'));
+        otpInputs.forEach((input, index) => {
+            input.addEventListener('input', () => {
+                input.value = input.value.replace(/\D/g, '').slice(0, 1);
+                if (input.value && index < otpInputs.length - 1) {
+                    otpInputs[index + 1].focus();
+                }
+            });
+
+            input.addEventListener('keydown', (event) => {
+                if (event.key === 'Backspace' && !input.value && index > 0) {
+                    otpInputs[index - 1].focus();
+                }
+            });
+        });
+    </script>
+</body>
+</html>

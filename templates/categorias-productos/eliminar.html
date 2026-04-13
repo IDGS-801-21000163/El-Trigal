@@ -1,0 +1,33 @@
+{% extends "layout.html" %}
+
+{% block page_title %}{{ module['name'] }}{% endblock %}
+{% block card_title %}Eliminar categoría{% endblock %}
+
+{% block content %}
+
+<form method="POST" class="text-center">
+
+    {{ form.hidden_tag() }}
+
+    <p class="mb-4">
+        ¿Estás seguro de eliminar la categoría?
+    </p>
+
+    <p class="font-bold text-[color:var(--brown-light)] mb-6">
+        {{ categoria.nombre }}
+    </p>
+
+    <div class="flex justify-center gap-4">
+        <button class="btn btn-primary">
+            Sí, eliminar
+        </button>
+
+        <a href="{{ url_for('categorias_productos.inicio') }}"
+           class="btn btn-outline">
+            Cancelar
+        </a>
+    </div>
+
+</form>
+
+{% endblock %}

@@ -1,0 +1,599 @@
+{% extends "layout.html" %}
+
+{% block page_title %}
+    Producción
+{% endblock %}
+
+{% block card_title %}
+    Guía paso a paso: {{ producto.nombre }}
+{% endblock %}
+
+{% block content %}
+<section class="module-dashboard">
+    <section class="dashboard-hero production-guide">
+        <div class="dashboard-hero__copy">
+            <span class="dashboard-chip">Lote #{{ produccion.id }}</span>
+            <h2>{{ producto.nombre }}</h2>
+            <p>Objetivo: {{ detalle.cantidad_solicitada }} piezas. Sigue la receta paso a paso y marca el avance para acompañar al empleado durante la producción.</p>
+            <div class="dashboard-hero__stats">
+                <article>
+                    <span>Estado</span>
+                    <strong>{{ produccion.estado }}</strong>
+                </article>
+                <article>
+                    <span>Avance</span>
+                    <strong>{{ avance }}%</strong>
+                </article>
+            </div>
+        </div>
+        <div class="dashboard-hero__viz">
+            <div class="hero-ring" style="--ring-value: {{ avance }};">
+                <div>
+                    <span>Progreso</span>
+                    <strong>{{ state.current + 1 }}/{{ steps|length }}</strong>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="guide-layout">
+        <aside class="guide-sidebar">
+            {% for step in steps %}
+            <article class="guide-step {% if loop.index0 == state.current %}is-current{% endif %} {% if loop.index0 in state.completed %}is-done{% endif %}">
+                <span class="guide-step__index">{{ loop.index }}</span>
+                <div>
+                    <strong>{{ step.title }}</strong>
+                    <small>{{ step.description }}</small>
+                </div>
+            </article>
+            {% endfor %}
+        </aside>
+
+        <div class="guide-content">
+            <article class="table-shell">
+                <div class="table-shell__header">
+                    <h2>{{ steps[state.current].title }}</h2>
+                    <p>{{ steps[state.current].description }}</p>
+                </div>
+                <div class="guide-checklist">
+                    {% for item in steps[state.current]["items"] %}
+                    <div class="guide-checklist__item">
+                        <span class="guide-checklist__dot"></span>
+                        <p>{{ item }}</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </article>
+
+            <div class="button-row">
+                <form method="POST">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <input type="hidden" name="action" value="prev">
+                    <button class="btn btn-outline" type="submit" {% if state.current == 0 %}disabled{% endif %}>Paso anterior</button>
+                </form>
+                <form method="POST">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <input type="hidden" name="action" value="next">
+                    <button class="btn btn-primary" type="submit">
+                        {% if state.current >= (steps|length - 1) %}Ir a cierre{% else %}Continuar{% endif %}
+                    </button>
+                </form>
+                <button class="btn btn-help" type="button" onclick="openHelpModal()">Necesito ayuda</button>
+                <a href="{{ url_for('produccion.terminar', id=produccion.id) }}" class="btn btn-outline">Cerrar producción</a>
+            </div>
+        </div>
+    </section>
+</section>
+
+<div id="helpModal" class="help-modal is-hidden">
+    <div class="help-modal__backdrop" onclick="closeHelpModal()"></div>
+    <div class="help-modal__card">
+        <div class="help-modal__topbar">
+            <div>
+                <h2>Asistencia en producción</h2>
+                <p>Asistente guiado del lote actual.</p>
+            </div>
+            <button class="btn btn-outline" type="button" onclick="closeHelpModal()">Salir</button>
+        </div>
+
+        <div class="help-call">
+            <div class="help-call__stage">
+                <div class="help-assistant-stage">
+                    <div class="help-assistant-stage__portrait">
+                        <div class="help-assistant-stage__ring"></div>
+                        <div id="helpBaker" class="help-baker help-baker--hero">
+                            <div class="help-baker__hat"></div>
+                            <div class="help-baker__body"></div>
+                            <div class="help-baker__arm help-baker__arm--left"></div>
+                            <div class="help-baker__arm help-baker__arm--right"></div>
+                            <div class="help-baker__head">
+                                <span class="help-baker__eye"></span>
+                                <span class="help-baker__eye"></span>
+                                <span class="help-baker__mouth"></span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="help-assistant-stage__meta">
+                        <strong>Maestro Trigal</strong>
+                        <span class="help-assistant-stage__subtitle">Guía de receta en tiempo real</span>
+                        <small id="helpAssistantStatus" class="help-assistant-stage__statusline">
+                            {% if ai_help_configured %}
+                            Listo para conectar
+                            {% else %}
+                            Sin integración de voz
+                            {% endif %}
+                        </small>
+                        <div id="helpAssistantMode" class="help-assistant-mode help-assistant-mode--idle">
+                            <span class="help-assistant-mode__dot"></span>
+                            <span class="help-assistant-mode__text">
+                                {% if ai_help_configured %}En espera{% else %}Sin configurar{% endif %}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="help-call__pip">
+                    <video id="helpCamera" class="help-camera" autoplay muted playsinline></video>
+                    <canvas id="helpMotionCanvas" class="help-camera__canvas" width="160" height="120"></canvas>
+                    <div class="help-camera__overlay">
+                        <strong>Tú</strong>
+                        <span id="helpCameraStatus" class="status-badge inactive">Cámara inactiva</span>
+                        <small id="helpMotionStatus">Sin análisis visual</small>
+                    </div>
+                </div>
+            </div>
+            <div class="help-call__panel">
+                <div class="metric-list help-context-list">
+                    <div class="metric-list__item"><span>Producto</span><strong>{{ producto.nombre }}</strong></div>
+                    <div class="metric-list__item"><span>Paso actual</span><strong>{{ steps[state.current].title }}</strong></div>
+                    <div class="metric-list__item"><span>Visual</span><strong>{% if ai_help_visual %}Análisis manual{% else %}Solo cámara local{% endif %}</strong></div>
+                </div>
+
+                <div id="helpTranscript" class="help-transcript">
+                    <article class="help-bubble help-bubble--system">
+                        Enfocado en la receta y el paso actual.
+                    </article>
+                </div>
+            </div>
+        </div>
+        <div class="help-floating-actions">
+            <button id="startHelpCallBtn" class="btn btn-primary" type="button">Iniciar asistencia</button>
+            <button id="stopHelpCallBtn" class="btn btn-outline" type="button" disabled>Colgar</button>
+            <button id="analyzeHelpFrameBtn" class="btn btn-help" type="button" {% if not ai_help_visual %}disabled{% endif %}>
+                Analizar lo que estoy viendo
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+const HELP_AI_CONFIGURED = {{ "true" if ai_help_configured else "false" }};
+const HELP_AI_VISUAL = {{ "true" if ai_help_visual else "false" }};
+const HELP_AI_TTS = {{ "true" if ai_help_tts else "false" }};
+const HELP_CSRF_TOKEN = "{{ csrf_token() }}";
+const HELP_TEXT_URL = "{{ url_for('produccion.ayuda_texto', id=produccion.id) }}";
+const HELP_VISION_URL = "{{ url_for('produccion.ayuda_vision_context', id=produccion.id) }}";
+const HELP_TTS_URL = "{{ url_for('produccion.ayuda_tts', id=produccion.id) }}";
+
+function openHelpModal() {
+    document.getElementById("helpModal").classList.remove("is-hidden");
+}
+
+function closeHelpModal() {
+    document.getElementById("helpModal").classList.add("is-hidden");
+    if (window.helpProductionAssistant) {
+        window.helpProductionAssistant.stop();
+    }
+}
+
+(function setupProductionHelpAssistant() {
+    const SpeechRecognitionApi = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const modal = document.getElementById("helpModal");
+    const video = document.getElementById("helpCamera");
+    const motionCanvas = document.getElementById("helpMotionCanvas");
+    const cameraStatus = document.getElementById("helpCameraStatus");
+    const motionStatus = document.getElementById("helpMotionStatus");
+    const assistantStatus = document.getElementById("helpAssistantStatus");
+    const assistantMode = document.getElementById("helpAssistantMode");
+    const transcript = document.getElementById("helpTranscript");
+    const baker = document.getElementById("helpBaker");
+    const startBtn = document.getElementById("startHelpCallBtn");
+    const stopBtn = document.getElementById("stopHelpCallBtn");
+    const analyzeBtn = document.getElementById("analyzeHelpFrameBtn");
+
+    const state = {
+        localStream: null,
+        recognition: null,
+        shouldKeepListening: false,
+        isSpeaking: false,
+        currentAudioUrl: null,
+        currentAudio: null,
+        motionInterval: null,
+        lastMotionFrame: null,
+    };
+
+    function pushBubble(role, text) {
+        if (!text) return;
+        const bubble = document.createElement("article");
+        bubble.className = `help-bubble help-bubble--${role}`;
+        bubble.textContent = text;
+        transcript.appendChild(bubble);
+        transcript.scrollTop = transcript.scrollHeight;
+    }
+
+    function setAssistantStatus(text) {
+        assistantStatus.textContent = text;
+    }
+
+    function setAssistantMode(mode, label) {
+        if (assistantMode) {
+            assistantMode.className = `help-assistant-mode help-assistant-mode--${mode}`;
+            const textNode = assistantMode.querySelector(".help-assistant-mode__text");
+            if (textNode) {
+                textNode.textContent = label;
+            }
+        }
+
+        baker.classList.remove("is-listening", "is-thinking", "is-speaking");
+        if (mode === "listening") {
+            baker.classList.add("is-listening");
+        } else if (mode === "thinking") {
+            baker.classList.add("is-thinking");
+        } else if (mode === "speaking") {
+            baker.classList.add("is-speaking");
+        }
+    }
+
+    function setCameraState(active) {
+        cameraStatus.textContent = active ? "Cámara activa" : "Cámara inactiva";
+        cameraStatus.className = `status-badge ${active ? "active" : "inactive"}`;
+    }
+
+    function stopRemoteLipSync() {
+        if (!baker.classList.contains("is-listening") && !baker.classList.contains("is-thinking")) {
+            baker.classList.remove("is-speaking");
+        }
+    }
+
+    async function speakAssistantText(text) {
+        if (!text) {
+            setAssistantMode("listening", "Escuchando");
+            return;
+        }
+
+        if ("speechSynthesis" in window) {
+            window.speechSynthesis.cancel();
+        }
+        if (state.currentAudio) {
+            try { state.currentAudio.pause(); } catch (error) {}
+            state.currentAudio = null;
+        }
+        if (state.currentAudioUrl) {
+            URL.revokeObjectURL(state.currentAudioUrl);
+            state.currentAudioUrl = null;
+        }
+
+        const onSpeakStart = () => {
+            state.isSpeaking = true;
+            setAssistantStatus("Respondiendo por voz...");
+            setAssistantMode("speaking", "Respondiendo");
+        };
+        const onSpeakEnd = () => {
+            state.isSpeaking = false;
+            setAssistantStatus("Escuchando tu siguiente pregunta");
+            if (state.shouldKeepListening) {
+                setAssistantMode("listening", "Escuchando");
+            } else {
+                setAssistantMode("idle", "En espera");
+            }
+        };
+
+        if (HELP_AI_TTS) {
+            try {
+                onSpeakStart();
+                const response = await fetch(HELP_TTS_URL, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-CSRFToken": HELP_CSRF_TOKEN,
+                    },
+                    body: JSON.stringify({ text }),
+                });
+
+                if (!response.ok) {
+                    const payload = await response.json().catch(() => ({}));
+                    throw new Error(payload.error || "No fue posible sintetizar la voz.");
+                }
+
+                const audioBlob = await response.blob();
+                const audioUrl = URL.createObjectURL(audioBlob);
+                const audio = new Audio(audioUrl);
+                state.currentAudioUrl = audioUrl;
+                state.currentAudio = audio;
+
+                audio.addEventListener("ended", () => {
+                    onSpeakEnd();
+                    if (state.currentAudioUrl) {
+                        URL.revokeObjectURL(state.currentAudioUrl);
+                        state.currentAudioUrl = null;
+                    }
+                    state.currentAudio = null;
+                });
+                audio.addEventListener("error", () => {
+                    state.currentAudio = null;
+                    if (state.currentAudioUrl) {
+                        URL.revokeObjectURL(state.currentAudioUrl);
+                        state.currentAudioUrl = null;
+                    }
+                    setAssistantStatus("No se pudo reproducir el audio");
+                    setAssistantMode("error", "Sin audio");
+                });
+                await audio.play();
+                return;
+            } catch (error) {
+                pushBubble("system", error.message || "Azure Speech no pudo reproducir la respuesta. Se usará audio local.");
+            }
+        }
+
+        if (!("speechSynthesis" in window)) {
+            setAssistantStatus("Tu navegador no soporta reproducción de voz");
+            setAssistantMode("error", "Sin TTS");
+            return;
+        }
+
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = "es-MX";
+        utterance.rate = 1;
+        utterance.pitch = 0.98;
+
+        const voices = window.speechSynthesis.getVoices();
+        const preferredVoice = voices.find((voice) => voice.lang && voice.lang.toLowerCase().startsWith("es"));
+        if (preferredVoice) {
+            utterance.voice = preferredVoice;
+        }
+
+        utterance.onstart = onSpeakStart;
+        utterance.onend = onSpeakEnd;
+        utterance.onerror = () => {
+            state.isSpeaking = false;
+            setAssistantStatus("No se pudo reproducir el audio");
+            setAssistantMode("error", "Sin audio");
+        };
+
+        window.speechSynthesis.speak(utterance);
+    }
+
+    async function askAssistant(message, visualContext = "") {
+        setAssistantStatus("Consultando al asistente...");
+        setAssistantMode("thinking", "Pensando");
+
+        const response = await fetch(HELP_TEXT_URL, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-CSRFToken": HELP_CSRF_TOKEN,
+            },
+            body: JSON.stringify({
+                message,
+                visual_context: visualContext,
+            }),
+        });
+
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok) {
+            throw new Error(payload.error || "No fue posible consultar la asistencia.");
+        }
+
+        const answer = payload.answer || "";
+        pushBubble("assistant", answer);
+        speakAssistantText(answer);
+        return answer;
+    }
+
+    function startMotionDetection() {
+        const ctx = motionCanvas.getContext("2d", { willReadFrequently: true });
+        state.motionInterval = window.setInterval(() => {
+            if (!state.localStream || !video.videoWidth) return;
+            ctx.drawImage(video, 0, 0, motionCanvas.width, motionCanvas.height);
+            const frame = ctx.getImageData(0, 0, motionCanvas.width, motionCanvas.height).data;
+
+            if (!state.lastMotionFrame) {
+                state.lastMotionFrame = new Uint8ClampedArray(frame);
+                return;
+            }
+
+            let diff = 0;
+            for (let i = 0; i < frame.length; i += 16) {
+                diff += Math.abs(frame[i] - state.lastMotionFrame[i]);
+            }
+
+            state.lastMotionFrame = new Uint8ClampedArray(frame);
+
+            if (diff > 1800) {
+                motionStatus.textContent = "Movimiento detectado";
+            } else {
+                motionStatus.textContent = "Cámara local activa";
+            }
+        }, 1400);
+    }
+
+    async function analyzeCurrentFrame(manual = false) {
+        if (!HELP_AI_VISUAL) {
+            pushBubble("system", "El análisis visual no está configurado.");
+            return;
+        }
+        if (!state.localStream || !video.videoWidth) {
+            pushBubble("system", "Primero inicia la asistencia para activar la cámara.");
+            return;
+        }
+
+        const capture = document.createElement("canvas");
+        capture.width = 960;
+        capture.height = 540;
+        const ctx = capture.getContext("2d");
+        ctx.drawImage(video, 0, 0, capture.width, capture.height);
+        const imageUrl = capture.toDataURL("image/jpeg", 0.82);
+
+        motionStatus.textContent = manual ? "Analizando captura actual..." : "Analizando contexto visual...";
+        if (manual) {
+            pushBubble("user", "Analiza lo que estoy mostrando en cámara.");
+        }
+
+        try {
+            const response = await fetch(HELP_VISION_URL, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": HELP_CSRF_TOKEN,
+                },
+                body: JSON.stringify({ image_url: imageUrl }),
+            });
+
+            const payload = await response.json().catch(() => ({}));
+            if (!response.ok) {
+                throw new Error(payload.error || "No se pudo analizar la captura.");
+            }
+
+            if (payload.summary) {
+                pushBubble("assistant", payload.summary);
+                motionStatus.textContent = "Captura analizada";
+                speakAssistantText(payload.summary);
+            }
+        } catch (error) {
+            pushBubble("system", error.message || "No se pudo analizar la captura.");
+            motionStatus.textContent = "Falló el análisis visual";
+        }
+    }
+
+    async function start() {
+        if (!HELP_AI_CONFIGURED) {
+            pushBubble("system", "Falta configurar Azure OpenAI para activar la asistencia.");
+            setAssistantStatus("Configuración pendiente");
+            setAssistantMode("error", "Sin configurar");
+            return;
+        }
+
+        if (!SpeechRecognitionApi) {
+            pushBubble("system", "Tu navegador no soporta reconocimiento de voz. Prueba en Chrome o Edge.");
+            setAssistantStatus("Reconocimiento de voz no disponible");
+            setAssistantMode("error", "Sin STT");
+            return;
+        }
+
+        startBtn.disabled = true;
+        setAssistantStatus("Solicitando acceso a cámara...");
+        setAssistantMode("thinking", "Conectando");
+
+        try {
+            state.localStream = await navigator.mediaDevices.getUserMedia({
+                video: {
+                    width: { ideal: 960 },
+                    height: { ideal: 540 },
+                    facingMode: "user",
+                },
+            });
+
+            video.srcObject = state.localStream;
+            setCameraState(true);
+            startMotionDetection();
+            state.shouldKeepListening = true;
+            state.recognition = new SpeechRecognitionApi();
+            state.recognition.lang = "es-MX";
+            state.recognition.continuous = true;
+            state.recognition.interimResults = false;
+
+            state.recognition.addEventListener("start", () => {
+                setAssistantStatus("Escuchando tu voz...");
+                setAssistantMode("listening", "Escuchando");
+            });
+
+            state.recognition.addEventListener("result", async (event) => {
+                const result = event.results[event.results.length - 1];
+                if (!result || !result.isFinal) return;
+                const transcriptText = result[0].transcript.trim();
+                if (!transcriptText) return;
+                pushBubble("user", transcriptText);
+                try {
+                    await askAssistant(transcriptText);
+                } catch (error) {
+                    pushBubble("system", error.message || "No fue posible obtener respuesta del asistente.");
+                    setAssistantStatus("No fue posible responder");
+                    setAssistantMode("error", "Error");
+                }
+            });
+
+            state.recognition.addEventListener("end", () => {
+                if (state.shouldKeepListening && !state.isSpeaking) {
+                    try {
+                        state.recognition.start();
+                    } catch (error) {
+                        // Ignore duplicate start attempts.
+                    }
+                }
+            });
+
+            state.recognition.addEventListener("error", () => {
+                setAssistantStatus("No fue posible escuchar el micrófono");
+                setAssistantMode("error", "Micrófono");
+            });
+
+            stopBtn.disabled = false;
+            pushBubble("system", "Asistencia activa. Habla con Maestro Trigal para recibir guía.");
+            try {
+                state.recognition.start();
+            } catch (error) {
+                // Ignore if browser starts recognition automatically.
+            }
+        } catch (error) {
+            pushBubble("system", error.message || "No fue posible conectar la asistencia.");
+            setAssistantStatus("No fue posible conectar");
+            setAssistantMode("error", "Error de conexión");
+            startBtn.disabled = false;
+            stop();
+        }
+    }
+
+    function stop() {
+        state.shouldKeepListening = false;
+        if (state.motionInterval) {
+            clearInterval(state.motionInterval);
+            state.motionInterval = null;
+        }
+        state.lastMotionFrame = null;
+        if ("speechSynthesis" in window) {
+            window.speechSynthesis.cancel();
+        }
+        if (state.currentAudio) {
+            try { state.currentAudio.pause(); } catch (error) {}
+            state.currentAudio = null;
+        }
+        if (state.currentAudioUrl) {
+            URL.revokeObjectURL(state.currentAudioUrl);
+            state.currentAudioUrl = null;
+        }
+        stopRemoteLipSync();
+
+        if (state.recognition) {
+            try { state.recognition.stop(); } catch (error) {}
+            state.recognition = null;
+        }
+        if (state.localStream) {
+            state.localStream.getTracks().forEach((track) => track.stop());
+            state.localStream = null;
+        }
+        video.srcObject = null;
+        setCameraState(false);
+        motionStatus.textContent = HELP_AI_VISUAL ? "Sin análisis visual" : "Cámara local inactiva";
+        setAssistantStatus(HELP_AI_CONFIGURED ? "Asistencia detenida" : "Falta configurar Azure OpenAI");
+        setAssistantMode(HELP_AI_CONFIGURED ? "idle" : "error", HELP_AI_CONFIGURED ? "En espera" : "Sin configurar");
+        startBtn.disabled = false;
+        stopBtn.disabled = true;
+    }
+
+    startBtn.addEventListener("click", start);
+    stopBtn.addEventListener("click", stop);
+    analyzeBtn.addEventListener("click", () => analyzeCurrentFrame(true));
+    window.helpProductionAssistant = { stop };
+})();
+</script>
+{% endblock %}

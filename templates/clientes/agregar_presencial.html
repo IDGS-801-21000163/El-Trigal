@@ -1,0 +1,28 @@
+{% extends "layout.html" %} 
+{% block page_title %}Clientes{% endblock %}
+{% block card_title %}Agregar cliente{% endblock %}
+{% from "macros/forms.html" import render_input %}
+
+{% block content %}
+
+<form method="POST" enctype="multipart/form-data" class="form-container">
+
+    {{ form.hidden_tag() }}
+
+    <div class="form-grid">
+        {{ render_input(form.nombre) }}
+        {{ render_input(form.apellido_paterno) }}
+        {{ render_input(form.apellido_materno) }}
+        {{ render_input(form.telefono) }}
+        {{ render_input(form.correo) }}
+        {{ render_input(form.foto) }}
+    </div>
+
+    <div class="button-row">
+        <button class="btn btn-primary">Guardar</button>
+        <a href="{{ url_for('clientes.inicio') }}" class="btn btn-outline">Regresar</a>
+    </div>
+
+</form>
+
+{% endblock %}

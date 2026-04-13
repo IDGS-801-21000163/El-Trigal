@@ -1,0 +1,57 @@
+{% extends "layout.html" %}
+
+{% block page_title %}
+    {{ module['name'] }}
+{% endblock %}
+
+{% block card_title %}
+    Gestión de {{ module['name'] }}
+{% endblock %}
+
+{% block content %}
+<section class="module-dashboard">
+
+
+    <div class="toolbar toolbar--wrap">
+        <form method="GET">
+            <input class="input-search" type="text" name="buscar" value="{{ buscar }}" placeholder="Buscar categoria...">
+            <select class="form-input form-input--compact" name="estatus">
+                <option value="">Todos los estatus</option>
+                <option value="ACTIVO" {% if estatus == 'ACTIVO' %}selected{% endif %}>ACTIVO</option>
+                <option value="INACTIVO" {% if estatus == 'INACTIVO' %}selected{% endif %}>INACTIVO</option>
+            </select>
+            <button class="btn btn-outline" type="submit">Filtrar</button>
+        </form>
+        <div class="toolbar-group">
+            <a href="{{ url_for('categorias_insumos.agregar') }}" class="btn btn-primary">+ Nueva categoria</a>
+        </div>
+    </div>
+
+    <section class="module-grid">
+        {% for categoria in categorias %}
+        <article class="employee-card">
+            <div class="employee-header">
+                <div class="avatar">{{ categoria.nombre[:1] }}</div>
+                <div class="employee-main">
+                    <h2 class="employee-name">{{ categoria.nombre }}</h2>
+                </div>
+            </div>
+            <div class="employee-body">
+                <div class="employee-meta"><span>Estatus:</span> {{ categoria.estatus }}</div>
+                <div class="employee-meta"><span>Insumos:</span> {{ categoria.insumos|length }}</div>
+            </div>
+            <div class="employee-actions employee-actions--stack-mobile">
+                <a href="{{ url_for('categorias_insumos.detalle', id=categoria.id) }}" class="btn btn-outline">Detalle</a>
+                <a href="{{ url_for('categorias_insumos.editar', id=categoria.id) }}" class="btn btn-primary">Editar</a>
+                <a href="{{ url_for('categorias_insumos.eliminar', id=categoria.id) }}"
+                   class="btn {% if categoria.estatus == 'ACTIVO' %}btn-danger-outline{% else %}btn-outline{% endif %} btn-full-row">
+                    {{ 'Eliminar' if categoria.estatus == 'ACTIVO' else 'Activar' }}
+                </a>
+            </div>
+        </article>
+        {% else %}
+        <p class="empty-state">No hay categorias registradas.</p>
+        {% endfor %}
+    </section>
+</section>
+{% endblock %}

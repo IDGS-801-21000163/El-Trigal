@@ -1,0 +1,76 @@
+{% extends "layout.html" %}
+
+{% block page_title %}
+    Producción
+{% endblock %}
+
+{% block card_title %}
+    Crear nueva producción
+{% endblock %}
+
+{% block content %}
+<section class="module-dashboard">
+    <form method="POST" class="form-container">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <h3 class="form-section-title">Configurar lote manual</h3>
+        <div class="form-grid">
+            <label class="form-group">
+                <span>Producto a producir</span>
+                <select name="producto_id" class="form-input" required>
+                    <option value="">Selecciona un producto</option>
+                    {% for producto in productos %}
+                    <option value="{{ producto.id }}">{{ producto.nombre }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+            <label class="form-group">
+                <span>Cantidad solicitada</span>
+                <input type="number" name="cantidad" min="1" class="form-input" required>
+            </label>
+        </div>
+        <div class="button-row">
+            <button class="btn btn-primary" type="submit">Crear orden</button>
+            <a href="{{ url_for('produccion.inicio') }}" class="btn btn-outline">Cancelar</a>
+        </div>
+    </form>
+
+    <div class="table-shell">
+        <div class="table-shell__header">
+            <h2>Solicitudes pendientes de producción</h2>
+            <p>Estas solicitudes ya deberían poder arrancarse desde aquí.</p>
+        </div>
+        <div class="table-shell__body">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Producto</th>
+                        <th>Cantidad</th>
+                        <th>Estado</th>
+                        <th>Fecha</th>
+                        <th>Acción</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for solicitud in solicitudes_pendientes %}
+                    <tr>
+                        <td>{{ solicitud.producto }}</td>
+                        <td>{{ solicitud.cantidad }}</td>
+                        <td>{{ solicitud.estado }}</td>
+                        <td>{{ solicitud.fecha.strftime('%d/%m/%Y %H:%M') if solicitud.fecha else '-' }}</td>
+                        <td>
+                            <a class="btn btn-outline" href="{{ url_for('produccion.crear', solicitud_id=solicitud.id) }}">
+                                Crear desde solicitud
+                            </a>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="5">No hay solicitudes pendientes por convertir en orden.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
+{% endblock %}

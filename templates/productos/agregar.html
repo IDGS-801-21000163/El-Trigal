@@ -1,0 +1,90 @@
+{% extends "layout.html" %}
+
+{% block page_title %}{{ module['name'] }}{% endblock %}
+{% block card_title %}Agregar producto{% endblock %}
+
+{% block content %}
+<form method="POST" enctype="multipart/form-data" class="form-container">
+    {{ form.hidden_tag() }}
+
+    <section class="table-shell">
+        <div class="table-shell__header">
+            <h3>Nuevo producto</h3>
+            <p>Captura los datos base del producto y su imagen de catálogo.</p>
+        </div>
+
+        <div class="table-shell__body">
+            <div class="form-layout">
+                <div class="form-layout__media">
+                    <div id="preview-fallback" class="detail-avatar placeholder detail-avatar--square detail-avatar--large">PRO</div>
+                    <img
+                        id="preview-image"
+                        class="detail-avatar detail-avatar--square detail-avatar--large is-hidden"
+                        src=""
+                        alt="Vista previa del producto">
+                </div>
+
+                <div class="form-layout__fields">
+                    <h3 class="form-section-title">Datos del producto</h3>
+
+                    <div class="form-grid">
+                        <label class="form-group">
+                            <span>{{ form.nombre.label.text }}</span>
+                            {{ form.nombre(class="form-input", placeholder="Ej. Concha vainilla") }}
+                            {% if form.nombre.errors %}<span class="form-error">{{ form.nombre.errors[0] }}</span>{% endif %}
+                        </label>
+
+                        <label class="form-group">
+                            <span>{{ form.fk_categoria.label.text }}</span>
+                            {{ form.fk_categoria(class="form-input") }}
+                            {% if form.fk_categoria.errors %}<span class="form-error">{{ form.fk_categoria.errors[0] }}</span>{% endif %}
+                        </label>
+
+                        <label class="form-group">
+                            <span>{{ form.precio.label.text }}</span>
+                            {{ form.precio(class="form-input", step="0.01", min="0") }}
+                            {% if form.precio.errors %}<span class="form-error">{{ form.precio.errors[0] }}</span>{% endif %}
+                        </label>
+
+                        <label class="form-group">
+                            <span>Costo de producción</span>
+                            {{ form.costo_produccion(class="form-input", readonly=true) }}
+                            <span class="form-error" style="color: var(--brown-light);">Se calcula automáticamente desde las recetas.</span>
+                        </label>
+
+                        <label class="form-group form-group--full">
+                            <span>{{ form.foto.label.text }}</span>
+                            {{ form.foto(class="form-input", accept=".png,.jpg,.jpeg") }}
+                            {% if form.foto.errors %}<span class="form-error">{{ form.foto.errors[0] }}</span>{% endif %}
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="button-row">
+                <button type="submit" class="btn btn-primary">Guardar producto</button>
+                <a href="{{ url_for('productos.inicio') }}" class="btn btn-outline">Cancelar</a>
+            </div>
+        </div>
+    </section>
+</form>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+    const input = document.getElementById("foto");
+    const image = document.getElementById("preview-image");
+    const fallback = document.getElementById("preview-fallback");
+
+    if (!input || !image) return;
+
+    input.addEventListener("change", (event) => {
+        const file = event.target.files && event.target.files[0];
+        if (!file) return;
+
+        image.src = URL.createObjectURL(file);
+        image.classList.remove("is-hidden");
+        if (fallback) fallback.classList.add("is-hidden");
+    });
+});
+</script>
+{% endblock %}

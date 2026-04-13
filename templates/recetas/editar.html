@@ -1,0 +1,117 @@
+{% extends "layout.html" %}
+
+{% block page_title %}Gestión de Receta{% endblock %}
+{% block card_title %}Editar Receta{% endblock %}
+
+{% block content %}
+{% if redirect_url %}
+<script>
+    setTimeout(() => {
+        window.location.href = "{{ redirect_url }}";
+    }, 2000);
+</script>
+{% endif %}
+
+<div class="inventory-alert inventory-alert--warning">
+    Estás editando esta receta.
+</div>
+
+<form method="POST" class="form-container" id="formEditarReceta">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+    <div class="form-grid">
+        <div class="form-group">
+            <label class="form-label">Producto</label>
+            {{ form.fk_producto(class="form-input") }}
+            {% for error in form.fk_producto.errors %}
+            <small class="field-error">{{ error }}</small>
+            {% endfor %}
+        </div>
+
+        <div class="form-group form-group--full">
+            <label class="form-label">Descripción de receta</label>
+            {{ form.descripcion(class="form-input form-input--textarea", placeholder="Ejemplo: Mezclar, amasar, reposar, hornear.") }}
+            {% for error in form.descripcion.errors %}
+            <small class="field-error">{{ error }}</small>
+            {% endfor %}
+        </div>
+    </div>
+
+    <section class="detail-card">
+        <div class="detail-card__header">
+            <h3>Insumos</h3>
+            <button type="submit" name="accion" value="agregar" class="btn btn-primary" formnovalidate>+ Agregar fila</button>
+        </div>
+
+        <div class="receta-detail-list">
+            {% for d in form.detalles %}
+            <div class="receta-detail-row">
+                <div class="form-group">
+                    <label class="form-label">Insumo</label>
+                    {{ d.fk_insumo(class="form-input") }}
+                    {% for error in d.fk_insumo.errors %}
+                    <small class="field-error">{{ error }}</small>
+                    {% endfor %}
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Cantidad</label>
+                    {{ d.cantidad_insumo(class="form-input") }}
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Unidad</label>
+                    {{ d.fk_unidad(class="form-input") }}
+                </div>
+
+                <div class="receta-detail-row__aside">
+                    <button
+                        type="submit"
+                        name="accion"
+                        value="quitar_{{ loop.index0 }}"
+                        class="btn btn-danger-outline"
+                        {% if form.detalles|length <= 3 %}disabled{% endif %}
+                        formnovalidate>
+                        Quitar
+                    </button>
+
+                    <div class="receta-insumo-preview">
+                        {% set img = imagenes_insumos.get(loop.index0) %}
+                        {% if img %}
+                        <img src="data:image/png;base64,{{ img.imagen }}" alt="{{ img.nombre }}">
+                        <span>{{ img.nombre }}</span>
+                        {% else %}
+                        <span>Sin imagen</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </section>
+
+    <div class="button-row">
+        <a href="{{ url_for('recetas.inicio') }}" class="btn btn-outline">Cancelar</a>
+        <button type="submit" class="btn btn-primary">Actualizar</button>
+    </div>
+</form>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+    let cambios = false;
+    document.querySelectorAll("#formEditarReceta input, #formEditarReceta select, #formEditarReceta textarea").forEach((el) => {
+        el.addEventListener("change", () => { cambios = true; });
+    });
+
+    window.addEventListener("beforeunload", (event) => {
+        if (!cambios) return;
+        event.preventDefault();
+        event.returnValue = "";
+    });
+
+    document.getElementById("formEditarReceta").addEventListener("submit", () => {
+        cambios = false;
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,29 @@
+{% extends "layout.html" %}
+
+{% block page_title %}Detalle de sucursal{% endblock %}
+{% block card_title %}{{ sucursal.nombre }}{% endblock %}
+
+{% block content %}
+{% set endpoint = module['slug']|replace('-', '_') %}
+<section class="detail-container">
+    <div class="detail-header">
+        <div class="detail-avatar placeholder">{{ sucursal.nombre[0] }}</div>
+        <div>
+            <div class="detail-name">{{ sucursal.nombre }}</div>
+            <div class="detail-role">{{ sucursal.telefono }}</div>
+        </div>
+    </div>
+
+    <div class="detail-grid">
+        <div class="detail-item"><span>Estatus</span><strong>{{ sucursal.estatus }}</strong></div>
+        <div class="detail-item"><span>Estado</span><strong>{{ sucursal.direccion.estado.nombre if sucursal.direccion and sucursal.direccion.estado else '-' }}</strong></div>
+        <div class="detail-item"><span>Municipio</span><strong>{{ sucursal.direccion.municipio.nombre if sucursal.direccion and sucursal.direccion.municipio else '-' }}</strong></div>
+        <div class="detail-item"><span>Dirección</span><strong>{{ direccion_texto }}</strong></div>
+    </div>
+
+    <div class="button-row">
+        <a class="btn btn-outline" href="{{ url_for(endpoint ~ '.inicio') }}">Volver</a>
+        <a class="btn btn-primary" href="{{ url_for(endpoint ~ '.editar', id=sucursal.id) }}">Editar</a>
+    </div>
+</section>
+{% endblock %}

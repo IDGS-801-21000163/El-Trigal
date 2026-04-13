@@ -1,0 +1,45 @@
+{% extends "layout.html" %}
+
+{% block page_title %}Detalle del Pedido{% endblock %}
+{% block card_title %}Pedido #{{ pedido.id }}{% endblock %}
+
+{% block content %}
+<section class="pedido-detail-shell">
+    <div class="pedido-detail-header">
+        <div>
+            <span class="pedido-kicker">Seguimiento</span>
+            <h2>Pedido #{{ pedido.id }}</h2>
+            <p>Estado actual: <strong>{{ pedido.estado }}</strong>. Entrega programada para {{ pedido.fecha_entrega.strftime('%d/%m/%Y') }}.</p>
+        </div>
+        <a href="{{ url_for('pedidos.inicio') }}" class="btn btn-outline pedido-back-button">Volver a pedidos</a>
+    </div>
+
+    <div class="pedido-detail-grid">
+        <section class="pedido-detail-card">
+            <h3>Resumen del pedido</h3>
+            <div class="pedido-summary pedido-summary--detail">
+                <div><span>Tipo</span><strong>{{ pedido.tipo_pedido }}</strong></div>
+                <div><span>Fecha de pedido</span><strong>{{ pedido.fecha_pedido.strftime('%d/%m/%Y %H:%M') }}</strong></div>
+                <div><span>Entrega</span><strong>{{ pedido.fecha_entrega.strftime('%d/%m/%Y') }}</strong></div>
+                <div><span>Total</span><strong>${{ '%.2f'|format(total) }}</strong></div>
+            </div>
+            <p class="pedido-detail-notes">{{ pedido.notas or 'Sin notas adicionales.' }}</p>
+        </section>
+
+        <section class="pedido-detail-card">
+            <h3>Productos solicitados</h3>
+            <div class="pedido-detail-lines">
+                {% for item in detalles %}
+                    <article class="pedido-detail-line">
+                        <div>
+                            <strong>{{ item.nombre }}</strong>
+                            <span>{{ item.cantidad }} x ${{ '%.2f'|format(item.precio_unitario) }}</span>
+                        </div>
+                        <strong>${{ '%.2f'|format(item.subtotal) }}</strong>
+                    </article>
+                {% endfor %}
+            </div>
+        </section>
+    </div>
+</section>
+{% endblock %}

@@ -1,0 +1,54 @@
+{% extends "layout.html" %}
+
+{% block page_title %}Receta{% endblock %}
+{% block card_title %}Detalle de Receta{% endblock %}
+
+{% block content %}
+<section class="detail-panel">
+    <div class="detail-panel__header">
+        <div>
+            <h2 class="detail-panel__title">{{ receta.producto.nombre }}</h2>
+            <p class="detail-panel__subtitle">{{ receta.detalles|selectattr('estatus', 'equalto', 'ACTIVO')|list|length }} insumos activos</p>
+        </div>
+        <div class="button-row">
+            <a href="{{ url_for('recetas.editarReceta') }}?id={{ receta.id }}" class="btn btn-primary">Editar</a>
+            <form method="POST" action="{{ url_for('recetas.eliminarReceta') }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="id" value="{{ receta.id }}">
+                <button type="submit" class="btn btn-danger-outline">Eliminar</button>
+            </form>
+            <a href="{{ url_for('recetas.inicio') }}" class="btn btn-outline">Volver</a>
+        </div>
+    </div>
+
+    <div class="detail-panel__grid">
+        <article class="detail-card">
+            <h3>Preparación</h3>
+            <ol class="receta-steps">
+                {% for paso in receta.descripcion.split(',') %}
+                    {% if paso.strip() %}
+                    <li>{{ paso.strip() }}</li>
+                    {% endif %}
+                {% endfor %}
+            </ol>
+        </article>
+
+        <article class="detail-card">
+            <h3>Ingredientes</h3>
+            <div class="receta-ingredient-list">
+                {% for d in receta.detalles if d.estatus == "ACTIVO" %}
+                <div class="receta-ingredient-item">
+                    <div class="avatar">I</div>
+                    <div class="employee-main">
+                        <strong class="employee-name">{{ d.insumo.nombre }}</strong>
+                        <p class="employee-role">{{ d.cantidad_insumo }} {{ d.unidad.nombre if d.unidad else '' }}</p>
+                    </div>
+                </div>
+                {% else %}
+                <p class="empty-state">No hay insumos activos registrados.</p>
+                {% endfor %}
+            </div>
+        </article>
+    </div>
+</section>
+{% endblock %}

@@ -1,0 +1,40 @@
+{% extends "layout.html" %}
+
+{% block page_title %}{{ module['name'] }}{% endblock %}
+{% block card_title %}Editar categoría{% endblock %}
+
+{% block content %}
+<form method="POST" class="form-container">
+    {{ form.hidden_tag() }}
+
+    <section class="table-shell">
+        <div class="table-shell__header">
+            <h3>Actualizar categoría</h3>
+            <p>Ajusta la información comercial asociada a esta categoría sin afectar los productos activos.</p>
+        </div>
+
+        <div class="table-shell__body">
+            <h3 class="form-section-title">{{ categoria.nombre }}</h3>
+
+            <div class="form-grid">
+                <label class="form-group">
+                    <span>{{ form.nombre.label.text }}</span>
+                    {{ form.nombre(class="form-input") }}
+                    {% if form.nombre.errors %}<span class="form-error">{{ form.nombre.errors[0] }}</span>{% endif %}
+                </label>
+
+                <label class="form-group form-group--full">
+                    <span>{{ form.descripcion.label.text }}</span>
+                    {{ form.descripcion(class="form-input", rows=5) }}
+                    {% if form.descripcion.errors %}<span class="form-error">{{ form.descripcion.errors[0] }}</span>{% endif %}
+                </label>
+            </div>
+
+            <div class="button-row">
+                <button type="submit" class="btn btn-primary">Guardar cambios</button>
+                <a href="{{ url_for('categorias_productos.inicio') }}" class="btn btn-outline">Cancelar</a>
+            </div>
+        </div>
+    </section>
+</form>
+{% endblock %}

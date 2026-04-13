@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ producto.nombre }} | El Trigal</title>
+    <link rel="icon" href="{{ url_for('static', filename='img/logoTrigal.png') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body class="landing-body">
+    <header class="site-header site-header--esperanza">
+        <div class="site-header__left">
+            <a class="site-brand" href="{{ url_for('landing') }}">
+                <img src="{{ url_for('static', filename='img/logoTrigal.png') }}" alt="El Trigal">
+                <div>
+                    <strong>EL TRIGAL</strong>
+                    <span>MX. 2026</span>
+                </div>
+            </a>
+        </div>
+        <nav class="site-nav site-nav--center">
+            <a href="{{ url_for('landing') }}#catalogo">CATÁLOGO</a>
+            <a href="{{ url_for('landing') }}#sucursales">SUCURSALES</a>
+            <a href="{{ url_for('landing') }}#cotizador">COTIZADOR</a>
+        </nav>
+        <div class="site-header__right">
+            <a class="nav-icon-btn" href="{{ url_for('carrito') }}" aria-label="Carrito">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <circle cx="9" cy="19" r="1.5"></circle>
+                    <circle cx="17" cy="19" r="1.5"></circle>
+                    <path d="M5 5h2l2.2 9.5h8.7l2-7H8.2"></path>
+                </svg>
+            </a>
+        </div>
+    </header>
+
+    <main class="landing-detail">
+        <div class="landing-detail__image">
+            {% if producto.imagen %}
+                <img src="{{ producto.imagen }}" alt="{{ producto.nombre }}">
+            {% else %}
+                <div class="landing-card__placeholder">EL TRIGAL</div>
+            {% endif %}
+        </div>
+        <div class="landing-detail__info">
+            <h1>{{ producto.nombre }}</h1>
+            <p>{{ producto.categoria }}</p>
+            <p>${{ '%.2f'|format(producto.precio) }}</p>
+            <p>Producto artesanal disponible para pedidos en línea.</p>
+            <form class="landing-detail__actions" action="{{ url_for('carrito_agregar') }}" method="post">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="producto_id" value="{{ producto.id }}">
+                <label>Cantidad</label>
+                <input type="number" name="cantidad" min="1" value="1">
+                <button class="primary-button primary-button--full" type="submit">Agregar al carrito</button>
+                <a class="secondary-button secondary-button--ghost secondary-button--full" href="{{ url_for('landing') }}">Volver al catálogo</a>
+            </form>
+        </div>
+    </main>
+</body>
+</html>

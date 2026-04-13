@@ -1,0 +1,55 @@
+{% macro render_input(field, extra_class="") %}
+<div class="form-group {{ extra_class }}">
+    <label>{{ field.label.text }}</label>
+    {{ field(class="form-input") }}
+
+    {% if field.errors %}
+        <span class="form-error">
+            {% for error in field.errors %}
+                {{ error }}
+            {% endfor %}
+        </span>
+    {% endif %}
+</div>
+{% endmacro %}
+
+{% macro render_flash() %}
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        <div class="flash-stack">
+        {% for category, message in messages %}
+            <div class="flash-banner {% if category == 'error' %}flash-banner--danger{% elif category == 'success' %}flash-banner--success{% elif category == 'warning' %}flash-banner--warning{% else %}flash-banner--info{% endif %}">{{ message }}</div>
+        {% endfor %}
+        </div>
+    {% endif %}
+{% endwith %}
+{% endmacro %}
+
+
+{% macro render_image_input(field, image_url=None) %}
+<div class="form-group">
+    <label>{{ field.label.text }}</label>
+
+    <img id="preview"
+         src="{{ image_url if image_url else url_for('static', filename='img/defecto.jpg') }}"
+         class="image-preview">
+
+    {{ field(class="form-input") }}
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const input = document.querySelector('input[type="file"]');
+    const preview = document.getElementById('preview');
+
+    if (input) {
+        input.addEventListener("change", function () {
+            const file = this.files[0];
+            if (file) {
+                preview.src = URL.createObjectURL(file);
+            }
+        });
+    }
+});
+</script>
+{% endmacro %}

@@ -1,0 +1,88 @@
+{% extends "layout.html" %}
+
+{% block page_title %}
+    Usuarios
+{% endblock %}
+
+{% block card_title %}
+    Gestión de usuarios
+{% endblock %}
+
+{% block content %}
+
+{% set endpoint = module['slug']|replace('-', '_') %}
+
+<div class="toolbar toolbar--wrap">
+    <form method="GET">
+        <input
+            class="input-search"
+            type="text"
+            name="buscar"
+            value="{{ buscar or '' }}"
+            placeholder="Buscar usuario...">
+        <button class="btn btn-outline" type="submit">Buscar</button>
+    </form>
+</div>
+
+<!-- ── GRID ── -->
+<section class="module-grid">
+
+    {% for item in module['items'] %}
+    <article class="employee-card employee-card--uniform searchable"
+        data-nombre="{{ item.nick }}"
+        data-rol="{{ item.rol.nombre if item.rol else '' }}">
+
+        <div class="employee-header">
+{% set persona = item.persona if item.persona and not item.persona is iterable else (item.persona[0] if item.persona else none) %}
+
+{% if persona and persona.foto %}
+    <img src="{{ persona.foto }}" class="avatar-img">
+{% else %}
+    <div class="avatar">
+        {{ item.nick[0] }}
+    </div>
+{% endif %}
+
+            <div class="employee-main">
+                <h2 class="employee-name">
+                    {{ item.nick }}
+                </h2>
+
+                <p class="employee-role">
+                    {{ item.rol.nombre if item.rol else 'Sin rol' }}
+                </p>
+            </div>
+        </div>
+
+        <div class="employee-body">
+            <div class="employee-meta">
+                <span>Nombre:</span>
+                {{ item.persona.nombre ~ ' ' ~ item.persona.apellido_uno if item.persona else 'Sin empleado' }}
+            </div>
+            <div class="employee-meta">
+                <span>Correo:</span>
+                {{ item.persona.correo if item.persona and item.persona.correo else item.nick }}
+            </div>
+            <div class="employee-meta">
+                <span>Rol:</span>
+                {{ item.rol.nombre if item.rol else 'Sin rol' }}
+            </div>
+        </div>
+
+        <div class="employee-actions">
+            <a href="{{ url_for(endpoint ~ '.detalle', id=item.id) }}" class="btn btn-primary">
+                Editar Rol 
+            </a>
+        </div>
+    </article>
+
+    {% endfor %}
+
+</section>
+
+{% with mensajes = get_flashed_messages(with_categories=True) %}
+{% if mensajes %}
+    <div hidden></div>
+{% endif %}
+{% endwith %}
+{% endblock %}

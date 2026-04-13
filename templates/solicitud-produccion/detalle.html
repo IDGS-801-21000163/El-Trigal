@@ -1,0 +1,137 @@
+{% extends "layout.html" %}
+
+{% block page_title %}Visualización de producción{% endblock %}
+{% block card_title %}Detalle de órdenes{% endblock %}
+
+{% block content %}
+
+<div class="flex justify-between items-center mb-6">
+
+<!-- Filtros -->
+<form method="GET" class="flex gap-4 mb-6">
+
+    <input type="text" id="buscador" name="buscar"
+        placeholder="Buscar producto..."
+        value="{{ buscar }}"
+        class="px-4 py-2 rounded-lg bg-white shadow w-64">
+
+    <select id="filtroEstado" name="estado"
+        class="px-4 py-2 rounded-lg bg-white shadow">
+
+        <option value="">Todos los estados</option>
+        <option value="PENDIENTE"      {% if estado == 'PENDIENTE'      %}selected{% endif %}>Pendiente</option>
+        <option value="APROBADA"       {% if estado == 'APROBADA'       %}selected{% endif %}>Aprobada</option>
+        <option value="EN_PRODUCCION"  {% if estado == 'EN_PRODUCCION'  %}selected{% endif %}>En producción</option>
+        <option value="TERMINADA"      {% if estado == 'TERMINADA'      %}selected{% endif %}>Terminada</option>
+        <option value="RECHAZADA"      {% if estado == 'RECHAZADA'      %}selected{% endif %}>Rechazada</option>
+    </select>
+
+    <button class="bg-[#a67c52] text-white px-4 py-2 rounded-lg hover:bg-[#8d6846]">
+        Filtrar
+    </button>
+
+    <a href="{{ url_for('solicitud_produccion.inicio') }}"
+       class="bg-[#a67c52] text-white px-4 py-2 rounded-lg hover:bg-[#8d6846]">
+        Regresar
+    </a>
+
+</form>
+</div>  
+
+<h2 class="text-lg font-semibold text-[#7a5d47] mb-4">
+    Órdenes Activas
+</h2>
+
+<!-- Tabla -->
+<div class="bg-white rounded-xl shadow p-4">
+
+    <table class="w-full text-sm">
+
+        <thead class="text-[#7a5d47]">
+            <tr class="border-b">
+                <th class="py-2">ID</th>
+                <th>Producto</th>
+                <th>Cantidad</th>
+                <th>Área</th>
+                <th>Estado</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            {% for orden in ordenes %}
+            <tr class="orden-item border-b hover:bg-gray-50 text-center"
+                data-estado="{{ orden.estado }}">
+
+                <td class="py-2">{{ orden.id }}</td>
+                <td class="nombre-producto">{{ orden.producto }}</td>
+                <td>{{ orden.cantidad }}</td>
+                <td>Ventas</td>
+
+                <td>
+                {% if orden.estado == 'PENDIENTE' %}
+                    <span class="bg-yellow-200 text-yellow-800 px-2 py-1 rounded">
+                        Pendiente
+                    </span>
+                {% elif orden.estado == 'APROBADA' %}
+                    <span class="bg-blue-200 text-blue-800 px-2 py-1 rounded">
+                        Aprobada
+                    </span>
+                {% elif orden.estado == 'EN_PRODUCCION' %}
+                    <span class="bg-orange-300 text-orange-900 px-2 py-1 rounded">
+                        En producción
+                    </span>
+                {% elif orden.estado == 'TERMINADA' %}
+                    <span class="bg-green-200 text-green-800 px-2 py-1 rounded">
+                        Terminada
+                    </span>
+                {% elif orden.estado == 'RECHAZADA' %}
+                    <span class="bg-red-200 text-red-800 px-2 py-1 rounded">
+                        Rechazada
+                    </span>
+                {% else %}
+                    <span class="bg-gray-200 text-gray-700 px-2 py-1 rounded">
+                        {{ orden.estado }}
+                    </span>
+                {% endif %}
+            </td>
+
+            </tr>
+            {% endfor %}
+        </tbody>
+
+    </table>
+
+</div>
+<script>
+const buscador = document.getElementById("buscador");
+const filtroEstado = document.getElementById("filtroEstado");
+const filas = document.querySelectorAll(".orden-item");
+
+function filtrarOrdenes() {
+    const texto = buscador.value.toLowerCase();
+    const estado = filtroEstado.value;
+
+    filas.forEach(fila => {
+
+        fila.style.display = ""; // reset
+
+        const nombre = fila.querySelector(".nombre-producto").textContent.toLowerCase();
+        const estadoFila = fila.getAttribute("data-estado");
+
+        const coincideNombre = nombre.includes(texto);
+        const coincideEstado = (estado === "") || (estadoFila === estado);
+
+        if (!(coincideNombre && coincideEstado)) {
+            fila.style.display = "none";
+        }
+    });
+}
+
+// 🔍 escribir
+buscador.addEventListener("keyup", filtrarOrdenes);
+
+// 📂 cambiar select
+filtroEstado.addEventListener("change", filtrarOrdenes);
+</script>
+
+{% endblock %}

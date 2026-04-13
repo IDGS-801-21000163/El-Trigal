@@ -1,0 +1,156 @@
+{% extends "layout.html" %}
+
+{% block page_title %}Gestión de Compras{% endblock %}
+{% block card_title %}Nueva Compra{% endblock %}
+
+{% block content %}
+
+<form method="POST" class="form-container">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+    <section class="table-shell">
+        <div class="table-shell__header">
+            <h2>Nueva compra</h2>
+            <p>Captura la compra, agrega insumos y confirma el pago del proveedor.</p>
+        </div>
+
+        <div class="table-shell__body compras-form-shell">
+            <h3 class="form-section-title">Datos base</h3>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="fk_empleado">Empleado</label>
+                    <select id="fk_empleado" name="fk_empleado" class="form-input" {% if carrito %}disabled{% endif %}>
+                        {% for e in empleados %}
+                        <option value="{{ e.id }}" {% if compra_data.fk_empleado == e.id|string %}selected{% endif %}>
+                            {{ e.persona.nombre if e.persona else 'Empleado sin persona' }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="fk_proveedor">Proveedor</label>
+                    <select id="fk_proveedor" name="fk_proveedor" class="form-input" {% if carrito %}disabled{% endif %}>
+                        {% for p in proveedores %}
+                        <option value="{{ p.id }}" {% if compra_data.fk_proveedor == p.id|string %}selected{% endif %}>
+                            {{ p.nombre_comercial }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <h3 class="form-section-title">Agregar insumo</h3>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="fk_insumo">Insumo</label>
+                    <select id="fk_insumo" name="fk_insumo" class="form-input">
+                        {% for i in insumos %}
+                        <option value="{{ i.id }}">{{ i.nombre }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="cantidad">Cantidad</label>
+                    <input id="cantidad" name="cantidad" type="number" class="form-input" placeholder="Ej. 10" min="0.01" step="0.01" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="fk_unidad">Unidad</label>
+                    <select id="fk_unidad" name="fk_unidad" class="form-input">
+                        {% for u in unidades %}
+                        <option value="{{ u.id }}">{{ u.nombre }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="costo">Costo unitario</label>
+                    <input id="costo" name="costo" type="number" class="form-input" placeholder="$" min="0.01" step="0.01" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="fecha_caducidad">Fecha de caducidad</label>
+                    <input id="fecha_caducidad" name="fecha_caducidad" type="date" class="form-input" required>
+                </div>
+            </div>
+
+            <div class="button-row">
+                <button name="accion" value="agregar" class="btn btn-primary" type="submit">Agregar al carrito</button>
+                <button name="accion" value="cancelar" class="btn btn-outline" type="submit" formnovalidate>Cancelar compra</button>
+            </div>
+        </div>
+    </section>
+
+    <section class="table-shell">
+        <div class="table-shell__header">
+            <h2>Insumos agregados</h2>
+            <p>{{ carrito|length }} artículo(s) en la compra</p>
+        </div>
+
+        <div class="table-shell__body">
+            {% if carrito %}
+            <section class="module-grid">
+                {% for item in carrito %}
+                <article class="employee-card employee-card--uniform">
+                    <div class="employee-header">
+                        <div class="employee-main">
+                            <h2 class="employee-name">{{ item.nombre }}</h2>
+                            <p class="employee-role">{{ ('%.2f'|format(item.cantidad|float)).rstrip('0').rstrip('.') }} {{ item.unidad }}</p>
+                        </div>
+                    </div>
+
+                    <div class="employee-body">
+                        <div class="employee-meta"><span>Costo:</span> ${{ '%.2f'|format(item.costo|float) }}</div>
+                        <div class="employee-meta"><span>Subtotal:</span> ${{ '%.2f'|format(item.subtotal|float) }}</div>
+                        <div class="employee-meta"><span>Caducidad:</span> {{ item.fecha_caducidad or '-' }}</div>
+                    </div>
+
+                    <div class="employee-actions employee-actions--stack-mobile">
+                        <button name="accion" value="eliminar_{{ item.id }}" class="btn btn-danger-outline btn-full-row" type="submit" formnovalidate>
+                            Quitar del carrito
+                        </button>
+                    </div>
+                </article>
+                {% endfor %}
+            </section>
+            {% else %}
+            <p class="empty-state">Todavía no agregas insumos a esta compra.</p>
+            {% endif %}
+        </div>
+    </section>
+
+    <section class="table-shell">
+        <div class="table-shell__header">
+            <h2>Cierre de compra</h2>
+            <p>Selecciona el método de pago y confirma el registro.</p>
+        </div>
+
+        <div class="table-shell__body compras-close-shell">
+            <div class="compras-close-grid">
+                <div class="detail-item compras-close-total">
+                    <span>Total</span>
+                    <strong>${{ '%.2f'|format(total|float) }}</strong>
+                </div>
+                <div class="form-group compras-close-method">
+                    <label for="metodo_pago">Método de pago</label>
+                    <select id="metodo_pago" name="metodo_pago" class="form-input">
+                        {% for m in metodos_pago %}
+                        <option value="{{ m.id }}" {% if compra_data.metodo_pago == m.id|string %}selected{% endif %}>
+                            {{ 'Tarjeta' if m.nombre == 'Tarjeta guardada' else m.nombre }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <div class="button-row">
+                <button name="accion" value="confirmar" class="btn btn-primary" type="submit" formnovalidate>Confirmar compra</button>
+                <a href="{{ url_for('compras.inicio') }}" class="btn btn-outline">Volver al listado</a>
+            </div>
+        </div>
+    </section>
+</form>
+
+{% endblock %}

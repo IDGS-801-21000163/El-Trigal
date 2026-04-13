@@ -1,0 +1,82 @@
+{% extends "layout.html" %}
+
+{% block page_title %}Clientes{% endblock %}
+{% block card_title %}Gestión de clientes{% endblock %}
+
+{% block content %}
+<div class="toolbar toolbar--wrap">
+    <form method="GET">
+        <input
+            class="input-search"
+            type="text"
+            name="buscar"
+            value="{{ buscar or '' }}"
+            placeholder="Buscar cliente...">
+        <button class="btn btn-outline" type="submit">Buscar</button>
+    </form>
+    <div class="toolbar-group">
+        <a href="{{ url_for('clientes.agregar') }}" class="btn btn-primary">+ Nuevo</a>
+    </div>
+</div>
+
+<form id="deleteClienteForm" method="POST" style="display:none;">
+    {{ form_eliminar.hidden_tag() }}
+</form>
+
+<section class="module-grid">
+    {% for cliente in clientes %}
+    <article class="employee-card employee-card--uniform searchable"
+        data-nombre="{{ cliente.nombre }} {{ cliente.apellido_uno }} {{ cliente.apellido_dos }}"
+        data-correo="{{ cliente.correo }}"
+        data-telefono="{{ cliente.telefono }}">
+        <div class="employee-header">
+            <img src="{{ cliente.foto }}" alt="{{ cliente.nombre }}" class="avatar-img">
+            <div class="employee-main">
+                <h2 class="employee-name">{{ cliente.nombre }} {{ cliente.apellido_uno }}{% if cliente.apellido_dos %} {{ cliente.apellido_dos }}{% endif %}</h2>
+                <p class="employee-role">{{ cliente.correo }}</p>
+            </div>
+        </div>
+
+        <div class="employee-body">
+            <div class="employee-meta"><span>Teléfono:</span> {{ cliente.telefono or 'Sin teléfono' }}</div>
+            <div class="employee-meta"><span>Correo:</span> {{ cliente.correo or 'Sin correo' }}</div>
+            <div class="employee-meta"><span>Cliente ID:</span> {{ cliente.id }}</div>
+        </div>
+
+        <div class="employee-actions employee-actions--stack-mobile">
+            <a href="{{ url_for('clientes.editar', id=cliente.id) }}" class="btn btn-primary">Editar</a>
+            <button
+                type="button"
+                class="btn btn-danger-outline btn-full-row js-delete-client"
+                data-url="{{ url_for('clientes.eliminar', id=cliente.id) }}"
+                data-name="{{ cliente.nombre }} {{ cliente.apellido_uno }}">
+                Eliminar
+            </button>
+        </div>
+    </article>
+    {% else %}
+    <p class="empty-state">No hay clientes registrados.</p>
+    {% endfor %}
+</section>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+    const form = document.getElementById("deleteClienteForm");
+
+    document.querySelectorAll(".js-delete-client").forEach((button) => {
+        button.addEventListener("click", async () => {
+            const result = await window.showConfirmDialog({
+                title: "Eliminar cliente",
+                text: `Se eliminará "${button.dataset.name}".`,
+                confirmText: "Sí, eliminar"
+            });
+
+            if (result.isConfirmed) {
+                form.action = button.dataset.url;
+                form.submit();
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,94 @@
+{% extends "layout.html" %}
+{% block page_title %}Inventario de productos{% endblock %}
+{% block card_title %}Gestión de inventario{% endblock %}
+{% block content %}
+
+<div class="toolbar toolbar--wrap">
+    <form method="GET">
+        <input
+            class="input-search"
+            type="text"
+            name="buscar"
+            value="{{ buscar or '' }}"
+            placeholder="Buscar producto...">
+        <button class="btn btn-outline" type="submit">Buscar</button>
+    </form>
+</div>
+
+    {% if hay_alerta_roja %}
+        <div class="inventory-alert inventory-alert--danger">Hay productos caducados en inventario.</div>
+    {% endif %}
+
+    {% if hay_alerta %}
+        <div class="inventory-alert inventory-alert--warning">Hay productos por caducar pronto.</div>
+    {% endif %}
+
+<form id="deleteInventarioForm" method="POST" style="display:none;">
+    {{ form.hidden_tag() }}
+</form>
+
+<section class="module-grid">
+    {% for inv in inventarios %}
+    <article class="employee-card employee-card--uniform searchable"
+        data-nombre="{{ inv.producto_nombre }}"
+        data-categoria="{{ inv.categoria }}"
+        data-estado="{{ inv.estado_display }}">
+        <div style="display:flex;justify-content:end;">
+            <span class="status-badge {{ inv.estado_clase }}">{{ inv.estado_display }}</span>
+        </div>
+        <div class="employee-header">
+            <img src="{{ inv.imagen }}" alt="{{ inv.producto_nombre }}" class="avatar-img">
+            <div class="employee-main">
+                <h2 class="employee-name">{{ inv.producto_nombre }}</h2>
+                <p class="employee-role">{{ inv.categoria }}</p>
+            </div>
+        </div>
+
+        <div class="employee-body">
+            <div class="employee-meta"><span>Existencia:</span> {{ inv.cantidad }}</div>
+            <div class="employee-meta"><span>Caduca:</span> {{ inv.fecha_caducidad }}</div>
+            <div class="employee-meta"><span>Estado:</span> {{ inv.estado_display }}</div>
+        </div>
+
+        <div class="employee-actions employee-actions--stack-mobile">
+            <a href="{{ url_for('inventario_productos.editar', id=inv.id) }}" class="btn btn-primary">Editar</a>
+            {% if inv.cantidad > 0 %}
+            <button type="button" class="btn btn-outline btn-full-row" disabled>No permitido</button>
+            {% else %}
+            <button
+                type="button"
+                class="btn btn-danger-outline btn-full-row js-delete-inventory"
+                data-url="{{ url_for('inventario_productos.eliminar', id=inv.id) }}"
+                data-name="{{ inv.producto_nombre }}">
+                Eliminar
+            </button>
+            {% endif %}
+        </div>
+    </article>
+    {% else %}
+    <p class="empty-state">No hay registros de inventario.</p>
+    {% endfor %}
+</section>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+    const form = document.getElementById("deleteInventarioForm");
+
+    document.querySelectorAll(".js-delete-inventory").forEach((button) => {
+        button.addEventListener("click", async () => {
+            const result = await window.showConfirmDialog({
+                title: "Eliminar inventario",
+                text: `Se eliminará el inventario de "${button.dataset.name}".`,
+                confirmText: "Sí, eliminar"
+            });
+
+            if (result.isConfirmed) {
+                form.action = button.dataset.url;
+                form.submit();
+            }
+        });
+    });
+});
+</script>
+
+{% endblock %}

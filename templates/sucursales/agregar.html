@@ -1,0 +1,119 @@
+{% extends "layout.html" %}
+
+{% block page_title %}{{ action_label }} sucursal{% endblock %}
+{% block card_title %}Formulario de sucursal{% endblock %}
+
+{% block content %}
+{% set endpoint = module['slug']|replace('-', '_') %}
+<form method="POST" class="form-container">
+    {{ form.hidden_tag() }}
+
+    <h3 class="form-section-title">Datos generales</h3>
+    <div class="form-grid">
+        <label class="form-group">
+            <span>{{ form.nombre.label.text }}</span>
+            {{ form.nombre(class="form-input") }}
+            {% if form.nombre.errors %}<span class="form-error">{{ form.nombre.errors[0] }}</span>{% endif %}
+        </label>
+        <label class="form-group">
+            <span>{{ form.telefono.label.text }}</span>
+            {{ form.telefono(class="form-input") }}
+            {% if form.telefono.errors %}<span class="form-error">{{ form.telefono.errors[0] }}</span>{% endif %}
+        </label>
+        <label class="form-group">
+            <span>{{ form.fk_estado.label.text }}</span>
+            {{ form.fk_estado(class="form-input") }}
+            {% if form.fk_estado.errors %}<span class="form-error">{{ form.fk_estado.errors[0] }}</span>{% endif %}
+        </label>
+        <label class="form-group">
+            <span>{{ form.fk_municipio.label.text }}</span>
+            {{ form.fk_municipio(class="form-input") }}
+            {% if form.fk_municipio.errors %}<span class="form-error">{{ form.fk_municipio.errors[0] }}</span>{% endif %}
+        </label>
+    </div>
+
+    <h3 class="form-section-title">Dirección</h3>
+    <div class="form-grid">
+        <label class="form-group">
+            <span>{{ form.calle.label.text }}</span>
+            {{ form.calle(class="form-input") }}
+            {% if form.calle.errors %}<span class="form-error">{{ form.calle.errors[0] }}</span>{% endif %}
+        </label>
+        <label class="form-group">
+            <span>{{ form.colonia.label.text }}</span>
+            {{ form.colonia(class="form-input") }}
+            {% if form.colonia.errors %}<span class="form-error">{{ form.colonia.errors[0] }}</span>{% endif %}
+        </label>
+        <label class="form-group">
+            <span>{{ form.codigo_postal.label.text }}</span>
+            {{ form.codigo_postal(class="form-input") }}
+            {% if form.codigo_postal.errors %}<span class="form-error">{{ form.codigo_postal.errors[0] }}</span>{% endif %}
+        </label>
+        <label class="form-group">
+            <span>{{ form.num_exterior.label.text }}</span>
+            {{ form.num_exterior(class="form-input") }}
+            {% if form.num_exterior.errors %}<span class="form-error">{{ form.num_exterior.errors[0] }}</span>{% endif %}
+        </label>
+        <label class="form-group">
+            <span>{{ form.num_interior.label.text }}</span>
+            {{ form.num_interior(class="form-input") }}
+            {% if form.num_interior.errors %}<span class="form-error">{{ form.num_interior.errors[0] }}</span>{% endif %}
+        </label>
+        <label class="form-group">
+            <span>{{ form.estatus.label.text }}</span>
+            {{ form.estatus(class="form-input") }}
+        </label>
+    </div>
+
+    <div class="button-row">
+        <a class="btn btn-outline" href="{{ url_for(endpoint ~ '.inicio') }}">Cancelar</a>
+        {{ form.submit(class="btn btn-primary") }}
+    </div>
+</form>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+    const estadoSelect = document.getElementById("fk_estado");
+    const municipioSelect = document.getElementById("fk_municipio");
+    const baseUrl = "{{ url_for('sucursales.municipios_por_estado', estado_id=0) }}";
+
+    if (!estadoSelect || !municipioSelect) return;
+
+    async function refreshMunicipios(estadoId) {
+        municipioSelect.disabled = true;
+        municipioSelect.innerHTML = "";
+
+        try {
+            const url = baseUrl.replace(/0$/, String(estadoId));
+            const res = await fetch(url, { headers: { "Accept": "application/json" } });
+            if (!res.ok) throw new Error("http");
+            const data = await res.json();
+            const municipios = Array.isArray(data.municipios) ? data.municipios : [];
+
+            const placeholder = document.createElement("option");
+            placeholder.value = "";
+            placeholder.textContent = "Seleccione una opción";
+            placeholder.disabled = true;
+            placeholder.selected = true;
+            municipioSelect.appendChild(placeholder);
+
+            municipios.forEach((m) => {
+                const opt = document.createElement("option");
+                opt.value = String(m.id);
+                opt.textContent = m.nombre;
+                municipioSelect.appendChild(opt);
+            });
+
+            municipioSelect.disabled = municipios.length === 0;
+        } catch (e) {
+            municipioSelect.disabled = false;
+        }
+    }
+
+    estadoSelect.addEventListener("change", () => {
+        const estadoId = Number(estadoSelect.value || 0);
+        if (estadoId > 0) refreshMunicipios(estadoId);
+    });
+});
+</script>
+{% endblock %}

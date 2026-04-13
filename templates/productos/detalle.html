@@ -1,0 +1,41 @@
+{% extends "layout.html" %}
+
+{% block page_title %}{{ module['name'] }}{% endblock %}
+{% block card_title %}Detalle de producto{% endblock %}
+
+{% block content %}
+
+<section class="table-shell">
+    <div class="table-shell__header">
+        <h2>{{ producto.nombre }}</h2>
+        <p>{{ producto.categoria }}</p>
+    </div>
+
+    <div class="table-shell__body compras-form-shell">
+        <div class="detail-header">
+            <img src="{{ producto.imagen }}" alt="{{ producto.nombre }}" class="detail-avatar detail-avatar--square detail-avatar--large">
+            <div class="detail-copy">
+                <p class="detail-name">{{ producto.nombre }}</p>
+                <p class="detail-role">{{ producto.categoria }}</p>
+            </div>
+        </div>
+
+        <div class="detail-grid">
+            <div class="detail-item">
+                <span>Precio</span>
+                <strong>${{ "%.2f"|format(producto.precio) }}</strong>
+            </div>
+            <div class="detail-item">
+                <span>Costo de producción</span>
+                <strong>${{ "%.2f"|format(producto.costo) }}</strong>
+            </div>
+        </div>
+
+        <div class="button-row">
+            <a href="{{ url_for('productos.editar', id=producto.id) }}" class="btn btn-primary">Editar</a>
+            <a href="{{ url_for('productos.inicio') }}" class="btn btn-outline">Volver</a>
+        </div>
+    </div>
+</section>
+
+{% endblock %}

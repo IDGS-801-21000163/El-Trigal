@@ -1,0 +1,77 @@
+{% extends "layout.html" %}
+
+{% block page_title %}
+    Producción
+{% endblock %}
+
+{% block card_title %}
+    {% if produccion.estado == 'TERMINADO' %}
+    Resultado final de {{ producto.nombre }}
+    {% else %}
+    Cerrar lote de {{ producto.nombre }}
+    {% endif %}
+{% endblock %}
+
+{% block content %}
+<form method="POST" class="form-container">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="detail-grid">
+        <article class="detail-item">
+            <span>Orden</span>
+            <strong>#{{ produccion.id }}</strong>
+        </article>
+        <article class="detail-item">
+            <span>Cantidad solicitada</span>
+            <strong>{{ detalle.cantidad_solicitada }}</strong>
+        </article>
+        <article class="detail-item">
+            <span>Estado</span>
+            <strong>{{ produccion.estado }}</strong>
+        </article>
+    </div>
+
+    <h3 class="form-section-title">Resultado final</h3>
+    <div class="form-grid">
+        <label class="form-group">
+            <span>Piezas correctas</span>
+            <input
+                type="number"
+                name="piezas"
+                class="form-input"
+                min="0"
+                max="{{ detalle.cantidad_solicitada }}"
+                value="{{ detalle.cantidad_producto if detalle.cantidad_producto is not none else '' }}"
+                {% if produccion.estado == 'TERMINADO' %}disabled{% else %}required{% endif %}>
+        </label>
+        <label class="form-group">
+            <span>Merma</span>
+            <input
+                type="number"
+                name="merma"
+                class="form-input"
+                min="0"
+                max="{{ detalle.cantidad_solicitada }}"
+                value="{{ detalle.cantidad_merma if detalle.cantidad_merma is not none else '' }}"
+                {% if produccion.estado == 'TERMINADO' %}disabled{% else %}required{% endif %}>
+        </label>
+        <label class="form-group">
+            <span>Fecha de caducidad</span>
+            <input
+                type="datetime-local"
+                name="fecha_caducidad"
+                class="form-input"
+                value="{{ inventario.fecha_caducidad.strftime('%Y-%m-%dT%H:%M') if inventario and inventario.fecha_caducidad else '' }}"
+                {% if produccion.estado == 'TERMINADO' %}disabled{% else %}required{% endif %}>
+        </label>
+    </div>
+
+    <div class="button-row">
+        {% if produccion.estado != 'TERMINADO' %}
+        <button class="btn btn-primary" type="submit">Guardar y cerrar</button>
+        {% endif %}
+        <a href="{% if produccion.estado == 'TERMINADO' %}{{ url_for('produccion.inicio') }}{% else %}{{ url_for('produccion.proceso', id=produccion.id) }}{% endif %}" class="btn btn-outline">
+            {% if produccion.estado == 'TERMINADO' %}Volver al listado{% else %}Volver a la guía{% endif %}
+        </a>
+    </div>
+</form>
+{% endblock %}

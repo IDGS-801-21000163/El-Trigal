@@ -1,0 +1,91 @@
+{% extends "layout.html" %}
+
+{% block page_title %}
+    Detalle de {{ module['name'] }}
+{% endblock %}
+
+{% block card_title %}
+    Información del insumo
+{% endblock %}
+
+{% block content %}
+<section class="detail-container">
+    <div class="detail-header">
+        {% if imagen %}
+        <img class="detail-avatar detail-avatar--square" src="{{ imagen }}" alt="{{ insumo.nombre }}">
+        {% else %}
+        <div class="detail-avatar placeholder detail-avatar--square">INS</div>
+        {% endif %}
+        <div>
+            <h2 class="detail-name">{{ insumo.nombre }}</h2>
+            <p class="detail-role">{{ insumo.categoria.nombre }}</p>
+        </div>
+    </div>
+
+    <div class="detail-grid">
+        <article class="detail-item">
+            <span>Merma configurada</span>
+            <strong>{{ '%.2f'|format(insumo.porcentaje_merma or 0) }}%</strong>
+        </article>
+        <article class="detail-item">
+            <span>Estatus</span>
+            <strong>{{ insumo.estatus }}</strong>
+        </article>
+        <article class="detail-item">
+            <span>Total en inventario</span>
+            <strong>{{ '%.2f'|format(existencia.total) }}</strong>
+        </article>
+        <article class="detail-item">
+            <span>Control de existencia</span>
+            <strong>{{ existencia.estado }}</strong>
+        </article>
+        <article class="detail-item">
+            <span>Usado en compras</span>
+            <strong>{{ metricas.compras }}</strong>
+        </article>
+        <article class="detail-item">
+            <span>Usado en recetas</span>
+            <strong>{{ metricas.recetas }}</strong>
+        </article>
+    </div>
+
+    <div class="table-shell">
+        <div class="table-shell__header">
+            <h2>Existencia por registro de inventario</h2>
+        </div>
+        <div class="table-shell__body">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Sucursal</th>
+                        <th>Cantidad</th>
+                        <th>Unidad</th>
+                        <th>Caducidad</th>
+                        <th>Estatus</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for inventario in existencia.registros %}
+                    <tr>
+                        <td>{{ inventario.sucursal.nombre }}</td>
+                        <td>{{ '%.2f'|format(inventario.cantidad or 0) }}</td>
+                        <td>{{ inventario.unidad.nombre if inventario.unidad else '-' }}</td>
+                        <td>{{ inventario.fecha_caducidad.strftime('%d/%m/%Y %H:%M') if inventario.fecha_caducidad else '-' }}</td>
+                        <td>{{ inventario.estatus or '-' }}</td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="5">No hay registros de inventario para este insumo.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="button-row">
+        <a class="btn btn-outline" href="{{ url_for('insumos.inicio') }}">Volver</a>
+        <a class="btn btn-primary" href="{{ url_for('insumos.editar', id=insumo.id) }}">Editar</a>
+    </div>
+</section>
+{% endblock %}

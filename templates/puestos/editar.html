@@ -1,0 +1,64 @@
+{% extends "layout.html" %}
+
+{% block page_title %}
+    {{ action_label }} {{ module['name'] }}
+{% endblock %}
+
+{% block card_title %}
+    Formulario de {{ module['name'] }}
+{% endblock %}
+
+{% block content %}
+
+{% set endpoint = module['slug']|replace('-', '_') %}
+
+<form method="POST" class="form-container">
+
+    {{ form.hidden_tag() }}
+
+    <!-- DATOS DEL PUESTO -->
+    <h3 class="form-section-title">Datos del puesto</h3>
+
+    <div class="form-grid">
+
+        <label class="form-group">
+            <span>{{ form.nombre.label.text }}</span>
+            {{ form.nombre(class="form-input") }}
+            {% if form.nombre.errors %}
+            <span class="form-error">{{ form.nombre.errors[0] }}</span>
+            {% endif %}
+        </label>
+
+        <label class="form-group">
+            <span>{{ form.sueldo.label.text }}</span>
+            {{ form.sueldo(class="form-input") }}
+            {% if form.sueldo.errors %}
+            <span class="form-error">{{ form.sueldo.errors[0] }}</span>
+            {% endif %}
+        </label>
+
+
+        <label class="form-group col-span-full">
+            <span>{{ form.descripcion.label.text }}</span>
+            {{ form.descripcion(class="form-input", rows=3) }}
+            {% if form.descripcion.errors %}
+            <span class="form-error">{{ form.descripcion.errors[0] }}</span>
+            {% endif %}
+        </label>
+
+    </div>
+
+    <!-- BOTONES -->
+    <div class="button-row">
+        <button class="btn btn-primary" type="submit">
+            {{ action_label }}
+        </button>
+        <a class="btn btn-outline" href="{{ url_for(endpoint ~ '.inicio') }}">
+            Volver
+        </a>
+    </div>
+
+</form>
+
+
+{% endblock %}

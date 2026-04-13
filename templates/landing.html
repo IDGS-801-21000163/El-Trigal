@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>El Trigal | Panadería artesanal</title>
+    <link rel="icon" href="{{ url_for('static', filename='img/logoTrigal.png') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body class="landing-body">
+    <header class="site-header site-header--esperanza">
+        <div class="site-header__left">
+            <a class="site-brand" href="{{ url_for('landing') }}">
+                <img src="{{ url_for('static', filename='img/logoTrigal.png') }}" alt="El Trigal">
+                <div>
+                    <strong>EL TRIGAL</strong>
+                    <span>MX. 2026</span>
+                </div>
+            </a>
+        </div>
+
+        <nav class="site-nav site-nav--center">
+            <a href="#catalogo">CATÁLOGO</a>
+            <a href="#sucursales">SUCURSALES</a>
+            <a href="#cotizador">COTIZADOR</a>
+        </nav>
+
+        <div class="site-header__right">
+            <a class="nav-icon-btn" href="{{ url_for('acceso') }}" aria-label="Cuenta">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <circle cx="12" cy="8" r="4"></circle>
+                    <path d="M4 20a8 8 0 0 1 16 0"></path>
+                </svg>
+            </a>
+            <a class="nav-icon-btn" href="{{ url_for('carrito') }}" aria-label="Carrito">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <circle cx="9" cy="19" r="1.5"></circle>
+                    <circle cx="17" cy="19" r="1.5"></circle>
+                    <path d="M5 5h2l2.2 9.5h8.7l2-7H8.2"></path>
+                </svg>
+            </a>
+        </div>
+    </header>
+
+    <main class="landing-page">
+        <section class="landing-hero" id="catalogo">
+            <div class="landing-hero__stage">
+                <div class="landing-hero__bg" aria-hidden="true">
+                    <img src="https://dynamic-media-cdn.tripadvisor.com/media/photo-o/2e/57/7e/55/caption.jpg?w=900&h=500&s=1" alt="">
+                </div>
+                <div class="landing-hero__veil" aria-hidden="true"></div>
+
+                <div class="landing-hero__inner">
+                    <div class="landing-hero__copy">
+                        <p class="landing-hero__kicker">Panadería artesanal</p>
+                        <h1 class="landing-hero__title">Horneamos diario. Agenda tu entrega. Pide en línea.</h1>
+                        <p class="landing-hero__subtitle">
+                            Catálogo siempre actualizado, pagos simples y una experiencia de compra directa desde tu cuenta.
+                        </p>
+
+                        <div class="landing-hero__actions">
+                            <a class="landing-hero__cta landing-hero__cta--primary" href="{{ url_for('acceso') }}">Ordenar ahora</a>
+                            <a class="landing-hero__cta landing-hero__cta--ghost" href="#catalogo-grid">Ver catálogo</a>
+                        </div>
+
+                        <div class="landing-hero__highlights" aria-label="Beneficios">
+                            <span class="landing-hero__chip">Entrega programada</span>
+                            <span class="landing-hero__chip">Pedido en línea</span>
+                            <span class="landing-hero__chip">Productos activos</span>
+                        </div>
+                    </div>
+
+                    <aside class="landing-hero__panel" aria-label="Resumen de catálogo">
+                        <div class="landing-hero__panel-top">
+                            <strong>{{ productos|length if productos else 0 }}</strong>
+                            <span>productos disponibles</span>
+                        </div>
+                        <div class="landing-hero__panel-list">
+                            <div>
+                                <span class="landing-hero__panel-label">Paso 1</span>
+                                <p>Elige del catálogo</p>
+                            </div>
+                            <div>
+                                <span class="landing-hero__panel-label">Paso 2</span>
+                                <p>Agenda entrega</p>
+                            </div>
+                            <div>
+                                <span class="landing-hero__panel-label">Paso 3</span>
+                                <p>Confirmas y listo</p>
+                            </div>
+                        </div>
+                        <a class="landing-hero__panel-link" href="{{ url_for('carrito') }}">Ir al carrito</a>
+                    </aside>
+                </div>
+            </div>
+        </section>
+
+        <section class="landing-welcome">
+            <h2>¡Hola! Bienvenido</h2>
+        </section>
+
+        {% with mensajes = get_flashed_messages(with_categories=true) %}
+            {% if mensajes %}
+                <div class="auth-flash-group">
+                    {% for categoria, mensaje in mensajes %}
+                        <div class="auth-flash auth-flash--{{ categoria }}">{{ mensaje }}</div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        <section class="landing-grid landing-grid--featured" id="catalogo-grid">
+            {% if productos %}
+                {% for item in productos %}
+                <article class="landing-card">
+                    <span class="card-like">♡</span>
+                    <a class="landing-card__link" href="{{ url_for('catalogo_detalle', producto_id=item.id) }}">
+                        {% if item.imagen %}
+                        <img src="{{ item.imagen }}" alt="{{ item.nombre }}">
+                        {% else %}
+                        <div class="landing-card__placeholder">EL TRIGAL</div>
+                        {% endif %}
+                        <p>Ver detalle</p>
+                        <span>{{ item.nombre }}</span>
+                        <small class="landing-price">${{ '%.2f'|format(item.precio) }}</small>
+                    </a>
+                </article>
+                {% endfor %}
+            {% else %}
+                <div class="landing-empty">No hay productos disponibles.</div>
+            {% endif %}
+        </section>
+
+        <section class="landing-categories" id="cotizador">
+            {% if categorias and categorias|length > 0 %}
+                {{ categorias | join(" · ") }}
+            {% else %}
+                No hay categorías activas registradas.
+            {% endif %}
+        </section>
+
+        <section class="landing-info" id="sucursales">
+            <div>
+                <h3>Pedido en línea</h3>
+                <p>Agrega productos al carrito, confirma tu pedido y el equipo lo prepara para entrega.</p>
+            </div>
+            <div>
+                <h3>Entrega programada</h3>
+                <p>Selecciona la fecha y deja notas de tu pedido para una mejor atención.</p>
+            </div>
+            <div>
+                <h3>Catálogo actualizado</h3>
+                <p>Solo mostramos productos activos y disponibles en el sistema.</p>
+            </div>
+        </section>
+    </main>
+
+    <footer class="landing-footer">
+        <div>
+            <div class="footer-brand">EL TRIGAL</div>
+            <p>Horneamos los 365 días del año. Deleitando tus sentidos.</p>
+        </div>
+        <div>
+            <h4>Inicio</h4>
+            <a href="#catalogo">Catálogo</a>
+            <a href="#sucursales">Sucursales</a>
+            <a href="#cotizador">Cotizador</a>
+        </div>
+        <div>
+            <h4>Legales</h4>
+            <a href="#">Aviso de privacidad</a>
+            <a href="#">Términos y condiciones</a>
+        </div>
+        <div>
+            <h4>Síguenos</h4>
+            <a href="#">Instagram</a>
+            <a href="#">Facebook</a>
+            <a href="#">TikTok</a>
+        </div>
+    </footer>
+
+</body>
+</html>

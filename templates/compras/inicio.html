@@ -1,0 +1,66 @@
+{% extends "layout.html" %}
+
+{% block page_title %}Gestión de Compras{% endblock %}
+{% block card_title %}Lista de Compras de Insumos{% endblock %}
+
+{% block content %}
+
+<div class="toolbar toolbar--wrap">
+    <form method="GET">
+        <input
+            class="input-search"
+            type="text"
+            name="buscar"
+            value="{{ buscar or '' }}"
+            placeholder="Buscar proveedor o empleado...">
+        <button class="btn btn-outline" type="submit">Buscar</button>
+    </form>
+
+    <div class="toolbar-group">
+        <a href="{{ url_for('compras.agregar') }}" class="btn btn-primary">+ Nueva compra</a>
+    </div>
+</div>
+
+<section class="module-grid">
+    {% for c in compras %}
+    <article class="employee-card employee-card--uniform searchable"
+        data-proveedor="{{ c.proveedor.nombre_comercial if c.proveedor else '' }}"
+        data-empleado="{{ c.empleado.persona.nombre if c.empleado and c.empleado.persona else '' }}"
+        data-fecha="{{ c.fecha_creacion.strftime('%Y-%m-%d') if c.fecha_creacion else '' }}">
+
+        <div class="employee-header">
+            <div class="employee-main">
+                <h2 class="employee-name">Compra #{{ c.id }}</h2>
+                <p class="employee-role">{{ c.proveedor.nombre_comercial if c.proveedor else 'Proveedor no disponible' }}</p>
+            </div>
+        </div>
+
+        <div class="employee-body">
+            <div class="employee-meta">
+                <span>Empleado:</span>
+                {{ c.empleado.persona.nombre if c.empleado and c.empleado.persona else 'Sin empleado asociado' }}
+            </div>
+            <div class="employee-meta">
+                <span>Total:</span>
+                ${{ c.monto_total }}
+            </div>
+            <div class="employee-meta">
+                <span>Fecha:</span>
+                {{ c.fecha_creacion.strftime('%d/%m/%Y') if c.fecha_creacion else '-' }}
+            </div>
+        </div>
+
+        <div class="employee-actions">
+            <a href="{{ url_for('compras.detalle', id=c.id) }}" class="btn btn-outline">Ver detalle</a>
+        </div>
+    </article>
+    {% else %}
+    <p class="empty-state">No hay compras registradas.</p>
+    {% endfor %}
+</section>
+
+<script>
+// Busqueda migrada a servidor via ?buscar=...
+</script>
+
+{% endblock %}

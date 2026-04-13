@@ -1,0 +1,107 @@
+{% extends "layout.html" %}
+
+{% block page_title %}
+    {{ module['name'] }}
+{% endblock %}
+
+{% block card_title %}
+    Gestión de {{ module['name'] }}
+{% endblock %}
+
+{% block content %}
+
+{% set endpoint = module['slug']|replace('-', '_') %}
+
+<div class="toolbar toolbar--wrap">
+    <form method="GET">
+        <input
+            class="input-search"
+            type="text"
+            name="buscar"
+            value="{{ buscar or '' }}"
+            placeholder="Buscar puestos...">
+        <button class="btn btn-outline" type="submit">Buscar</button>
+    </form>
+
+    <div class="toolbar-group">
+        <a href="{{ url_for(endpoint ~ '.agregar') }}" class="btn btn-primary">+ Nuevo</a>
+    </div>
+</div>
+
+<section class="module-grid">
+
+    {% for item in module['items'] %}
+    
+    <article class="employee-card employee-card--uniform searchable" 
+    data-nombre="{{ item.nombre }}">
+        <div class="employee-header">
+            <div class="avatar">P</div>
+            <div class="employee-main">
+                <h2 class="employee-name">{{ item.nombre }}</h2>
+            </div>
+        </div>
+
+        <div class="employee-body">
+            <div class="employee-meta"><span>Sueldo Semanal:</span> ${{ "%.2f"|format(item.sueldo) }}</div>
+            <div class="employee-meta"><span>Descripción:</span> {{ item.descripcion[:90] }}{% if item.descripcion|length > 90 %}...{% endif %}</div>
+        </div>
+
+        <div class="employee-actions employee-actions--stack-mobile">
+
+            <a href="{{ url_for(endpoint ~ '.editar', id=item.id) }}"
+               class="btn btn-primary">
+                Editar
+            </a>
+
+<a href="#"
+   class="btn btn-danger-outline btn-toggle"
+   data-url="{{ url_for(endpoint ~ '.eliminar', id=item.id) }}"
+   data-estado="{{ item.estatus }}">
+   
+   Eliminar
+</a>
+
+        </div>
+
+    </article>
+
+    {% endfor %}
+
+</section>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+
+    const botones = document.querySelectorAll(".btn-toggle")
+
+    botones.forEach(btn => {
+        btn.addEventListener("click", (e) => {
+            e.preventDefault()
+            const url = btn.dataset.url
+            const estado = btn.dataset.estado
+            const accion = estado === "ACTIVO" ? "eliminar" : "activar"
+
+            window.showConfirmDialog({
+                title: `¿Seguro que deseas ${accion}?`,
+                text: "Puedes revertir esta acción después.",
+                confirmText: "Sí, continuar",
+                cancelText: "Cancelar"
+            }).then((result) => {
+                if (result.isConfirmed) window.location.href = url
+            })
+        })
+    })
+})
+</script>
+
+<script>
+// Busqueda migrada a servidor via ?buscar=...
+</script>
+
+{% with mensajes = get_flashed_messages(with_categories=True) %}
+{% if mensajes %}
+    <div hidden></div>
+{% endif %}
+{% endwith %}
+
+{% endblock %}

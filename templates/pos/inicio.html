@@ -1,0 +1,245 @@
+{% extends "layout.html" %}
+
+{% block page_title %}Punto de Venta{% endblock %}
+{% block card_title %}Punto de Venta{% endblock %}
+
+{% block content %}
+<section class="pos-shell">
+    <div class="pos-toolbar">
+        <div>
+            {% if caja_abierta %}
+                <span class="status-badge active">Caja Abierta</span>
+            {% else %}
+                <span class="status-badge inactive">Caja Cerrada</span>
+            {% endif %}
+        </div>
+
+        <div class="toolbar-group">
+            {% if not caja_abierta %}
+            <button id="abrirCajaBtn" type="button" class="btn btn-primary">Abrir Caja</button>
+            {% endif %}
+            <a href="{{ url_for('pos.corte_caja') }}" class="btn btn-outline">
+                {% if caja_abierta %}Corte y cierre{% else %}Último corte{% endif %}
+            </a>
+        </div>
+    </div>
+
+    {% if not caja_abierta %}
+        <div class="inventory-alert inventory-alert--warning">
+            Debes abrir caja para comenzar ventas.
+        </div>
+    {% endif %}
+
+    <div class="pos-layout">
+        <section class="pos-products">
+            <div class="pedido-cart-card">
+                <div class="pedido-cart-card__header">
+                    <h2>Productos</h2>
+                    <span>{{ productos|length }} disponibles</span>
+                </div>
+
+                <div class="pos-products-grid">
+                    {% for p, stock in productos %}
+                    <form method="POST" class="pos-product-form">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <input type="hidden" name="producto_id" value="{{ p.id }}">
+
+                        <button
+                            type="submit"
+                            name="accion"
+                            value="agregar_producto"
+                            {% if not caja_abierta or pedido %}disabled{% endif %}
+                            class="pos-product-card {% if not caja_abierta or pedido %}pos-product-card--disabled{% endif %}">
+                            <div class="pos-product-card__media">
+                                {% if p.foto %}
+                                    <img src="data:image/png;base64,{{ p.foto }}" alt="{{ p.nombre }}">
+                                {% else %}
+                                    <img src="{{ url_for('static', filename='img/default-product.jpeg') }}" alt="{{ p.nombre }}" class="pos-product-card__placeholder">
+                                {% endif %}
+                            </div>
+
+                            <div class="pos-product-card__body">
+                                <p class="pos-product-card__name">{{ p.nombre }}</p>
+                                <p class="pos-product-card__price">${{ p.precio }}</p>
+                                <p class="pos-product-card__stock {% if stock <= 3 %}pos-product-card__stock--low{% elif stock <= 10 %}pos-product-card__stock--medium{% else %}pos-product-card__stock--ok{% endif %}">
+                                    Stock: {{ stock }}
+                                </p>
+                            </div>
+                        </button>
+                    </form>
+                    {% endfor %}
+                </div>
+            </div>
+        </section>
+
+        <aside class="pos-sidebar">
+            <section class="pedido-history-card">
+                <div class="pedido-history-card__header">
+                    <h3>Pedidos listos</h3>
+                    <span>{{ pedidos_listos|length }}</span>
+                </div>
+
+                <div class="pos-orders-list">
+                    {% for ped in pedidos_listos|reverse %}
+                    <form method="POST" class="pos-order-form">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <input type="hidden" name="accion" value="cargar_pedido">
+                        <input type="hidden" name="pedido_id" value="{{ ped.id }}">
+
+                        <button type="submit" class="pos-order-card">
+                            <div class="pedido-history-item">
+                                <div class="pedido-history-item__meta">
+                                    <strong>Pedido #{{ ped.id }}</strong>
+                                    <small>{{ ped.cliente.persona.nombre }}</small>
+                                </div>
+
+                                <div class="pos-order-card__meta">
+                                    {% if ped.tipo_pedido == "ONLINE" %}
+                                        <span class="status-badge active">Online</span>
+                                    {% else %}
+                                        <span class="status-badge warning">Local</span>
+                                    {% endif %}
+                                    <p class="pos-order-card__total">${{ ped.total if ped.total else 0 }}</p>
+                                    {% if ped.anticipo and ped.anticipo > 0 %}
+                                        <p class="pos-order-card__advance">Anticipo: ${{ ped.anticipo }}</p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </button>
+                    </form>
+                    {% else %}
+                    <p class="pedido-empty-state pedido-empty-state--compact">No hay pedidos listos.</p>
+                    {% endfor %}
+                </div>
+            </section>
+
+            <section class="pedido-cart-card">
+                <div class="pedido-cart-card__header">
+                    <h2>Carrito</h2>
+                    <span>{{ carrito|length }} artículos</span>
+                </div>
+
+                <div class="pedido-cart-items">
+                    {% for item in carrito %}
+                    <div class="pos-cart-item">
+                        <div class="pos-cart-item__body">
+                            <strong>{{ item.nombre }}</strong>
+                            <span>${{ item.precio }}</span>
+                        </div>
+
+                        <div class="pos-cart-item__controls">
+                            <form method="POST" class="pos-cart-action">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" name="accion" value="restar_{{ item.id }}" class="pos-qty-btn pos-qty-btn--ghost">-</button>
+                            </form>
+
+                            <input type="number" value="{{ item.cantidad }}" disabled class="pos-qty-input">
+
+                            <form method="POST" class="pos-cart-action">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" name="accion" value="sumar_{{ item.id }}" class="pos-qty-btn pos-qty-btn--primary">+</button>
+                            </form>
+
+                            <form method="POST" class="pos-cart-action">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" name="accion" value="eliminar_{{ item.id }}" class="pos-qty-btn pos-qty-btn--danger">×</button>
+                            </form>
+                        </div>
+                    </div>
+                    {% else %}
+                    <p class="pedido-empty-state pedido-empty-state--compact">El carrito está vacío.</p>
+                    {% endfor %}
+                </div>
+
+                <div class="pedido-summary">
+                    <div><span>Subtotal</span><strong>${{ subtotal }}</strong></div>
+                    <div class="pedido-summary__total"><span>Total</span><strong>${{ total }}</strong></div>
+                </div>
+
+                <form method="POST" class="pedido-checkout pos-checkout-form">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                    <div class="pos-checkout-grid">
+                        <select name="cliente_id" class="pos-field" {% if not caja_abierta %}disabled{% endif %}>
+                            <option value="1">Cliente General</option>
+                            {% for c in clientes %}
+                            <option value="{{ c.id }}">{{ c.persona.nombre }}</option>
+                            {% endfor %}
+                        </select>
+
+                        <select name="metodo_pago" class="pos-field" onchange="this.form.submit()" {% if not caja_abierta %}disabled{% endif %}>
+                            {% for m in metodos_pago %}
+                            <option value="{{ m.id }}" {% if metodo_id == m.id %}selected{% endif %}>{{ m.nombre }}</option>
+                            {% endfor %}
+                        </select>
+
+                        {% if metodo_seleccionado == 'efectivo' %}
+                        <input type="number" step="0.01" name="monto_recibido" placeholder="Monto recibido" class="pos-field" {% if not caja_abierta %}disabled{% endif %}>
+                        {% endif %}
+                    </div>
+
+                    {% if cambio is not none %}
+                    <div class="inventory-alert" style="background: rgba(111,143,95,0.12); color:#4f6a42; border-color: rgba(111,143,95,0.2);">
+                        Cambio: ${{ cambio }}
+                    </div>
+                    {% endif %}
+
+                    <button
+                        type="submit"
+                        name="accion"
+                        value="cobrar"
+                        class="pedido-checkout__button pos-checkout-button"
+                        {% if not caja_abierta or not carrito %}disabled{% endif %}>
+                        Cobrar
+                    </button>
+                </form>
+            </section>
+        </aside>
+    </div>
+</section>
+
+<form id="abrirCajaForm" method="POST" style="display:none;">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <input type="hidden" name="accion" value="abrir_caja">
+    <input type="hidden" name="monto_inicial" id="montoInicialCaja">
+</form>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+    const abrirCajaBtn = document.getElementById("abrirCajaBtn");
+    const abrirCajaForm = document.getElementById("abrirCajaForm");
+    const montoInput = document.getElementById("montoInicialCaja");
+
+    if (!abrirCajaBtn) return;
+
+    abrirCajaBtn.addEventListener("click", async () => {
+        const result = await window.showInputDialog({
+            title: "Abrir caja",
+            text: "Ingresa el monto inicial para comenzar operaciones.",
+            itemText: "Caja de ventas",
+            confirmText: "Abrir caja",
+            cancelText: "Cancelar",
+            inputLabel: "Monto inicial",
+            input: {
+                type: "number",
+                value: 0,
+                min: 0,
+                step: 0.01,
+                validate: (value) => {
+                    const monto = Number(value);
+                    if (Number.isNaN(monto) || monto < 0) {
+                        return "El monto inicial debe ser igual o mayor a 0.";
+                    }
+                    return "";
+                }
+            }
+        });
+
+        if (result.isConfirmed) {
+            montoInput.value = result.value;
+            abrirCajaForm.submit();
+        }
+    });
+});
+</script>
+{% endblock %}

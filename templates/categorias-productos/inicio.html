@@ -1,0 +1,82 @@
+{% extends "layout.html" %}
+
+{% block page_title %}{{ module['name'] }}{% endblock %}
+{% block card_title %}Categorías de productos{% endblock %}
+
+{% block content %}
+<div class="toolbar toolbar--wrap">
+    <form method="GET">
+        <input
+            class="input-search"
+            type="text"
+            name="buscar"
+            value="{{ buscar or '' }}"
+            placeholder="Buscar categoría...">
+        <button class="btn btn-outline" type="submit">Buscar</button>
+    </form>
+    <div class="toolbar-group">
+        <a href="{{ url_for('categorias_productos.agregar') }}" class="btn btn-primary">+ Nueva</a>
+    </div>
+</div>
+
+<form id="deleteCategoriaForm" method="POST" style="display:none;">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+</form>
+
+<section class="module-grid">
+    {% for cat in categorias %}
+    <article class="employee-card employee-card--uniform searchable"
+        data-nombre="{{ cat.nombre }}"
+        data-descripcion="{{ cat.descripcion or '' }}">
+
+        <div class="employee-header">
+            <div class="avatar">C</div>
+            <div class="employee-main">
+                <h2 class="employee-name">{{ cat.nombre }}</h2>
+                <p class="employee-role">Clasificación comercial</p>
+            </div>
+        </div>
+
+        <div class="employee-body">
+            <div class="employee-meta"><span>ID:</span> {{ cat.id }}</div>
+            <div class="employee-meta"><span>Descripción:</span> {{ cat.descripcion or 'Sin descripción registrada' }}</div>
+        </div>
+
+        <div class="employee-actions employee-actions--stack-mobile">
+            <a href="{{ url_for('categorias_productos.detalle', id=cat.id) }}" class="btn btn-outline">Ver</a>
+            <a href="{{ url_for('categorias_productos.editar', id=cat.id) }}" class="btn btn-primary">Editar</a>
+            <button
+                type="button"
+                class="btn btn-danger-outline btn-full-row js-delete-category"
+                data-url="{{ url_for('categorias_productos.eliminar', id=cat.id) }}"
+                data-name="{{ cat.nombre }}">
+                Eliminar
+            </button>
+        </div>
+    </article>
+    {% else %}
+    <p class="empty-state">No hay categorías disponibles.</p>
+    {% endfor %}
+</section>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+    const form = document.getElementById("deleteCategoriaForm");
+
+    document.querySelectorAll(".js-delete-category").forEach((button) => {
+        button.addEventListener("click", async () => {
+            const result = await window.showConfirmDialog({
+                title: "Eliminar categoría",
+                text: `Se eliminará "${button.dataset.name}".`,
+                confirmText: "Sí, eliminar"
+            });
+
+            if (result.isConfirmed) {
+                form.action = button.dataset.url;
+                form.submit();
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

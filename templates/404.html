@@ -1,0 +1,13 @@
+{% extends "layout.html" %}
+{% block title %}404 | El Trigal{% endblock %}
+{% block container %}
+<section class="dashboard-card">
+    <div class="dashboard-copy">
+        <p class="eyebrow">404</p>
+        <h1>Pagina no encontrada</h1>
+        <p>La ruta solicitada no existe en esta implementacion Flask.</p>
+    </div>
+
+    <a class="secondary-button" href="{{ url_for('landing') }}">Ir al inicio</a>
+</section>
+{% endblock %}

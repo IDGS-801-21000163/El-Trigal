@@ -1,0 +1,220 @@
+{% extends "layout.html" %}
+
+{% block page_title %}Pedidos En Línea{% endblock %}
+{% block card_title %}Tienda y Carrito{% endblock %}
+
+{% block content %}
+<section class="pedido-shell">
+    <div class="pedido-hero">
+        <div>
+            <span class="pedido-kicker">Compra directa</span>
+            <h2>Arma tu pedido y agenda la entrega desde tu cuenta.</h2>
+            <p>Tu perfil normal solo ve este módulo. Aquí puedes seleccionar productos, revisar tu carrito y pagar con la tarjeta guardada.</p>
+        </div>
+        <div class="pedido-hero__meta">
+            <strong>{{ cliente.persona.nombre if cliente and cliente.persona else usuario_sesion.nombre }}</strong>
+            <span>{{ card_profile.brand }} {{ card_profile.masked_number }}</span>
+            <small>Expira {{ card_profile.expires }}</small>
+        </div>
+    </div>
+
+    <section class="pedido-toolbar">
+        <form method="get" class="pedido-filters">
+            <input type="text" name="buscar" value="{{ buscar }}" placeholder="Buscar pan, galletas o especialidades">
+            <select name="categoria">
+                <option value="0">Todas las categorías</option>
+                {% for categoria in categorias %}
+                    <option value="{{ categoria.id }}" {% if categoria_id == categoria.id %}selected{% endif %}>{{ categoria.nombre }}</option>
+                {% endfor %}
+            </select>
+            <button type="submit" class="btn btn-primary">Filtrar</button>
+        </form>
+    </section>
+
+    <section class="pedido-layout">
+        <div class="pedido-catalog">
+            {% for item in productos %}
+                <article class="pedido-product-card">
+                    <img src="{{ item.imagen }}" alt="{{ item.nombre }}">
+                    <div class="pedido-product-card__body">
+                        <p class="pedido-product-card__category">{{ item.categoria }}</p>
+                        <h3>{{ item.nombre }}</h3>
+                        <div class="pedido-product-card__row">
+                            <strong>${{ '%.2f'|format(item.precio) }}</strong>
+                            <span>{{ item.stock_label }}</span>
+                        </div>
+                        <form method="post" action="{{ url_for('pedidos.agregar_al_carrito') }}" class="pedido-add-form">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <input type="hidden" name="producto_id" value="{{ item.id }}">
+                            <div class="pedido-qty-control">
+                                <button class="pedido-qty-btn" type="button" data-qty-action="minus">-</button>
+                                <input
+                                    class="pedido-qty-input"
+                                    type="number"
+                                    name="cantidad"
+                                    value="1"
+                                    min="1"
+                                    max="{{ item.stock|int if item.stock > 0 else 1 }}"
+                                    inputmode="numeric">
+                                <button class="pedido-qty-btn" type="button" data-qty-action="plus" {% if item.stock <= 1 %}disabled{% endif %}>+</button>
+                            </div>
+                            <button type="submit" class="btn btn-primary">Agregar</button>
+                        </form>
+                    </div>
+                </article>
+            {% else %}
+                <div class="pedido-empty-state">
+                    <strong>No encontramos productos con ese filtro.</strong>
+                    <span>Prueba con otra categoría o limpia la búsqueda.</span>
+                </div>
+            {% endfor %}
+        </div>
+
+        <aside class="pedido-sidebar">
+            <section class="pedido-cart-card">
+                <div class="pedido-cart-card__header">
+                    <div>
+                        <span>Carrito actual</span>
+                        <strong>{{ cart_summary["items"] }} artículos</strong>
+                    </div>
+                    <span class="pedido-total">${{ '%.2f'|format(cart_summary["total"]) }}</span>
+                </div>
+
+                <div class="pedido-cart-items">
+                    {% for item in cart_items %}
+                        <article class="pedido-cart-item">
+                            <img src="{{ item.imagen }}" alt="{{ item.nombre }}">
+                            <div class="pedido-cart-item__body">
+                                <strong>{{ item.nombre }}</strong>
+                                <span>${{ '%.2f'|format(item.precio) }} c/u</span>
+                                <div class="pedido-cart-item__actions">
+                                    <form method="post" action="{{ url_for('pedidos.actualizar_carrito') }}">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <input type="hidden" name="producto_id" value="{{ item.producto_id }}">
+                                        <input type="hidden" name="cantidad" value="{{ item.cantidad - 1 }}">
+                                        <button type="submit" class="pedido-cart-qty-btn" {% if item.cantidad <= 1 %}disabled{% endif %}>-</button>
+                                    </form>
+                                    <span class="pedido-cart-qty-display">{{ item.cantidad }}</span>
+                                    <form method="post" action="{{ url_for('pedidos.actualizar_carrito') }}">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <input type="hidden" name="producto_id" value="{{ item.producto_id }}">
+                                        <input type="hidden" name="cantidad" value="{{ item.cantidad + 1 }}">
+                                        <button type="submit" class="pedido-cart-qty-btn" {% if item.cantidad >= item.stock %}disabled{% endif %}>+</button>
+                                    </form>
+                                    <form method="post" action="{{ url_for('pedidos.eliminar_del_carrito') }}">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <input type="hidden" name="producto_id" value="{{ item.producto_id }}">
+                                        <button type="submit" class="btn btn-outline">Quitar</button>
+                                    </form>
+                                </div>
+                            </div>
+                            <strong>${{ '%.2f'|format(item.subtotal) }}</strong>
+                        </article>
+                    {% else %}
+                        <div class="pedido-empty-state pedido-empty-state--compact">
+                            <strong>Tu carrito está vacío.</strong>
+                            <span>Agrega productos para poder confirmar tu pedido.</span>
+                        </div>
+                    {% endfor %}
+                </div>
+
+                <form method="post" action="{{ url_for('pedidos.checkout') }}" class="pedido-checkout">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <label>
+                        Fecha de entrega
+                        <input type="date" name="fecha_entrega" min="{{ today }}" required>
+                    </label>
+                    <label>
+                        Notas del pedido
+                        <textarea name="notas" rows="3" placeholder="Ejemplo: sin nuez, empaque para regalo, recoger en mostrador."></textarea>
+                    </label>
+
+                    <div class="saved-card">
+                        <div class="saved-card__chip"></div>
+                        <p>{{ card_profile.brand }}</p>
+                        <strong>{{ card_profile.masked_number }}</strong>
+                        <div class="saved-card__footer">
+                            <span>{{ card_profile.holder }}</span>
+                            <span>{{ card_profile.expires }}</span>
+                        </div>
+                    </div>
+
+                    <div class="pedido-summary">
+                        <div><span>Subtotal</span><strong>${{ '%.2f'|format(cart_summary["subtotal"]) }}</strong></div>
+                        <div><span>Servicio</span><strong>${{ '%.2f'|format(cart_summary["service"]) }}</strong></div>
+                        <div class="pedido-summary__total"><span>Total a cobrar</span><strong>${{ '%.2f'|format(cart_summary["total"]) }}</strong></div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary pedido-checkout__button">Confirmar pedido</button>
+                </form>
+            </section>
+
+            <section class="pedido-history-card">
+                <div class="pedido-history-card__header">
+                    <strong>Mis pedidos recientes</strong>
+                    <span>{{ order_history|length }} registrados</span>
+                </div>
+                {% for order in order_history %}
+                    <a class="pedido-history-item" href="{{ url_for('pedidos.detalle', id=order.id) }}">
+                        <div>
+                            <strong>Pedido #{{ order.id }}</strong>
+                            <span>{{ order["items"] }} productos · entrega {{ order.entrega }}</span>
+                        </div>
+                        <div class="pedido-history-item__meta">
+                            <span>{{ order.estado }}</span>
+                            <strong>${{ '%.2f'|format(order.total) }}</strong>
+                        </div>
+                    </a>
+                {% else %}
+                    <div class="pedido-empty-state pedido-empty-state--compact">
+                        <strong>Aún no tienes pedidos.</strong>
+                        <span>Cuando confirmes uno aparecerá aquí.</span>
+                    </div>
+                {% endfor %}
+            </section>
+        </aside>
+    </section>
+</section>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+    document.querySelectorAll(".pedido-qty-control").forEach((control) => {
+        const form = control.closest("form");
+        const input = control.querySelector("input[name='cantidad']");
+        const minus = control.querySelector("[data-qty-action='minus']");
+        const plus = control.querySelector("[data-qty-action='plus']");
+        const max = Math.max(parseInt(input?.getAttribute("max") || "1", 10), 1);
+
+        if (!input || !minus || !plus) {
+            return;
+        }
+
+        const syncValue = (value, fallbackToCurrent = false) => {
+            const parsed = Number.parseInt(String(value || "1"), 10);
+            const currentValue = Math.max(parseInt(input.value || "1", 10), 1);
+            const base = Number.isNaN(parsed) ? (fallbackToCurrent ? currentValue : 1) : parsed;
+            const next = Math.min(Math.max(base, 1), max);
+            input.value = String(next);
+            minus.disabled = next <= 1;
+            plus.disabled = next >= max;
+        };
+
+        syncValue(input.value);
+
+        minus.addEventListener("click", () => {
+            const current = Math.max(parseInt(input.value || "1", 10), 1);
+            syncValue(current - 1);
+        });
+
+        plus.addEventListener("click", () => {
+            const current = Math.max(parseInt(input.value || "1", 10), 1);
+            syncValue(current + 1);
+        });
+
+        input.addEventListener("blur", () => syncValue(input.value));
+        input.addEventListener("change", () => syncValue(input.value));
+        form?.addEventListener("submit", () => syncValue(input.value, true));
+    });
+});
+</script>
+{% endblock %}

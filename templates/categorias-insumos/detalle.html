@@ -1,0 +1,72 @@
+{% extends "layout.html" %}
+
+{% block page_title %}
+    Detalle de {{ module['name'] }}
+{% endblock %}
+
+{% block card_title %}
+    Información de la categoría
+{% endblock %}
+
+{% block content %}
+<section class="detail-container">
+    <div class="detail-grid">
+        <article class="detail-item">
+            <span>Categoria</span>
+            <strong>{{ categoria.nombre }}</strong>
+        </article>
+        <article class="detail-item">
+            <span>Estatus</span>
+            <strong>{{ categoria.estatus }}</strong>
+        </article>
+        <article class="detail-item">
+            <span>Fecha de alta</span>
+            <strong>{{ categoria.fecha_creacion.strftime('%d/%m/%Y %H:%M') }}</strong>
+        </article>
+        <article class="detail-item">
+            <span>Total de insumos</span>
+            <strong>{{ insumos|length }}</strong>
+        </article>
+    </div>
+
+    <article class="detail-item">
+        <span>Descripcion</span>
+        <strong>{{ categoria.descripcion }}</strong>
+    </article>
+
+    <div class="table-shell">
+        <div class="table-shell__header">
+            <h2>Insumos relacionados</h2>
+        </div>
+        <div class="table-shell__body">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Insumo</th>
+                        <th>Merma</th>
+                        <th>Estatus</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for insumo in insumos %}
+                    <tr>
+                        <td>{{ insumo.nombre }}</td>
+                        <td>{{ '%.2f'|format(insumo.porcentaje_merma or 0) }}%</td>
+                        <td>{{ insumo.estatus }}</td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="3">No hay insumos asociados.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="button-row">
+        <a class="btn btn-outline" href="{{ url_for('categorias_insumos.inicio') }}">Volver</a>
+        <a class="btn btn-primary" href="{{ url_for('categorias_insumos.editar', id=categoria.id) }}">Editar</a>
+    </div>
+</section>
+{% endblock %}

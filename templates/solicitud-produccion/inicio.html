@@ -1,0 +1,133 @@
+{% extends "layout.html" %}
+
+{% block page_title %}Solicitud de producción{% endblock %}
+{% block card_title %}Gestión de solicitudes{% endblock %}
+
+{% block content %}
+<div class="toolbar toolbar--wrap">
+    <form method="GET">
+        <input type="text" id="buscador" name="buscar"
+            placeholder="Buscar producto..."
+            value="{{ buscar }}"
+            class="input-search">
+
+        <select id="filtroCategoria" name="categoria" class="form-input" style="max-width:240px;">
+            <option value="0">Todos los productos</option>
+
+            {% for cat in categorias %}
+                <option value="{{ cat.id }}"
+                    {% if categoria_id == cat.id %}selected{% endif %}>
+                    {{ cat.nombre }}
+                </option>
+            {% endfor %}
+        </select>
+        <button type="submit" class="btn btn-outline">Filtrar</button>
+    </form>
+    <div class="toolbar-group">
+        <a href="{{ url_for('solicitud_produccion.detalle') }}" class="btn btn-primary">Ver solicitudes</a>
+    </div>
+</div>
+
+<form id="solicitudForm" method="POST" action="{{ url_for('solicitud_produccion.agregar') }}" style="display:none;">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <input type="hidden" name="producto_id" id="solicitud_producto_id">
+    <input type="hidden" name="cantidad" id="solicitud_cantidad">
+</form>
+
+<section class="module-grid">
+{% for producto in productos %}
+<article class="employee-card employee-card--uniform producto-item searchable"
+     data-categoria-id="{{ producto.categoria_id }}">
+    <div style="display:flex;justify-content:end;">
+        <span class="status-badge active">Con receta</span>
+    </div>
+    <div class="employee-header">
+        <img src="{{ producto.imagen }}" alt="{{ producto.nombre }}" class="avatar-img">
+        <div class="employee-main">
+            <h2 class="employee-name nombre-producto">{{ producto.nombre }}</h2>
+            <p class="employee-role">{{ producto.categoria }}</p>
+        </div>
+
+    </div>
+
+    <div class="employee-body">
+        <div class="employee-meta"><span>Disponible:</span> {{ producto.stock }}</div>
+        <div class="employee-meta"><span>Precio:</span> ${{ "%.2f"|format(producto.precio) }}</div>
+        <div class="employee-meta"><span>Categoría:</span> {{ producto.categoria }}</div>
+    </div>
+
+    <div class="employee-actions">
+        <button
+            type="button"
+            class="btn btn-primary js-request-production"
+            data-product-id="{{ producto.id }}"
+            data-product-name="{{ producto.nombre }}">
+            Solicitar
+        </button>
+    </div>
+</article>
+{% else %}
+<p class="empty-state">No hay productos con receta activa para solicitar producción.</p>
+{% endfor %}
+</section>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+    const form = document.getElementById("solicitudForm");
+    const inputProducto = document.getElementById("solicitud_producto_id");
+    const inputCantidad = document.getElementById("solicitud_cantidad");
+    const buscador = document.getElementById("buscador");
+    const filtroCategoria = document.getElementById("filtroCategoria");
+    const cards = document.querySelectorAll(".searchable");
+
+    function filtrarTarjetas() {
+        const texto = buscador.value.toLowerCase();
+        const categoriaSeleccionada = filtroCategoria.value;
+
+        cards.forEach((card) => {
+            const nombre = card.querySelector(".nombre-producto").textContent.toLowerCase();
+            const categoria = card.dataset.categoriaId;
+            const coincideNombre = nombre.includes(texto);
+            const coincideCategoria = categoriaSeleccionada === "0" || categoria === categoriaSeleccionada;
+            card.style.display = coincideNombre && coincideCategoria ? "flex" : "none";
+        });
+    }
+
+    buscador.addEventListener("input", filtrarTarjetas);
+    filtroCategoria.addEventListener("change", filtrarTarjetas);
+
+    document.querySelectorAll(".js-request-production").forEach((button) => {
+        button.addEventListener("click", async () => {
+            const result = await window.showInputDialog({
+                title: "Nueva solicitud de producción",
+                text: `Indica cuántas piezas de "${button.dataset.productName}" deseas solicitar.`,
+                itemText: `Producto: ${button.dataset.productName}`,
+                confirmText: "Crear solicitud",
+                cancelText: "Cancelar",
+                input: {
+                    type: "number",
+                    value: 1,
+                    min: 1,
+                    step: 1,
+                    validate: (value) => {
+                        const cantidad = Number(value);
+                        if (!cantidad || cantidad <= 0) {
+                            return "La cantidad debe ser mayor a 0.";
+                        }
+                        return "";
+                    }
+                },
+                inputLabel: "Cantidad requerida"
+            });
+
+            if (result.isConfirmed) {
+                inputProducto.value = button.dataset.productId;
+                inputCantidad.value = result.value;
+                form.submit();
+            }
+        });
+    });
+});
+</script>
+
+{% endblock %}

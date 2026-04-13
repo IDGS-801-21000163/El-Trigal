@@ -1,0 +1,46 @@
+{% extends "layout.html" %}
+
+{% block page_title %}Proveedores{% endblock %}
+{% block card_title %}Detalle de proveedor{% endblock %}
+
+{% block content %}
+<div class="detail-container">
+    <div class="detail-header">
+        <div class="avatar">P</div>
+        <div>
+            <h2 class="detail-name">{{ proveedor.nombre_comercial }}</h2>
+            <p class="detail-role">{{ proveedor.razon_social or 'Sin razón social' }}</p>
+        </div>
+    </div>
+
+    <div class="detail-grid">
+        <div class="detail-item">
+            <span>Teléfono</span>
+            <strong>{{ proveedor.telefono or '-' }}</strong>
+        </div>
+        <div class="detail-item">
+            <span>Correo</span>
+            <strong>{{ proveedor.correo or '-' }}</strong>
+        </div>
+        <div class="detail-item">
+            <span>Estatus</span>
+            <strong>{{ proveedor.estatus }}</strong>
+        </div>
+        <div class="detail-item">
+            <span>Dirección</span>
+            <strong>
+                {% if proveedor.direccion %}
+                    {{ proveedor.direccion.calle or '' }} {{ proveedor.direccion.num_exterior or '' }}, {{ proveedor.direccion.colonia or '' }}
+                {% else %}
+                    Sin dirección
+                {% endif %}
+            </strong>
+        </div>
+    </div>
+
+    <div class="button-row">
+        <a href="{{ url_for('proveedores.inicio') }}" class="btn btn-outline">Volver</a>
+        <a href="{{ url_for('proveedores.editar', id=proveedor.id) }}" class="btn btn-primary">Editar</a>
+    </div>
+</div>
+{% endblock %}

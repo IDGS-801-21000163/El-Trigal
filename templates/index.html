@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Acceso | El Trigal</title>
+    <link rel="icon" href="{{ url_for('static', filename='img/logoTrigal.png') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body class="auth-body">
+    <header class="auth-header">
+        <a class="auth-brand" href="{{ url_for('landing') }}">
+            <img src="{{ url_for('static', filename='img/logoTrigal.png') }}" alt="El Trigal">
+            <div>
+                <strong>EL TRIGAL</strong>
+                <span>MX. 2026</span>
+            </div>
+        </a>
+        <nav class="auth-nav">
+            <a href="{{ url_for('landing') }}">Catálogo</a>
+            <a href="{{ url_for('landing') }}#sucursales">Sucursales</a>
+        </nav>
+    </header>
+
+    <main class="auth-shell">
+        <section class="auth-card auth-card--minimal">
+            <div class="auth-title-group">
+                <h1>Iniciar sesión</h1>
+                <span class="auth-title-line"></span>
+            </div>
+            {% with mensajes = get_flashed_messages(with_categories=true) %}
+                {% if mensajes %}
+                    <div class="auth-flash-group">
+                        {% for categoria, mensaje in mensajes %}
+                            <div class="auth-flash auth-flash--{{ categoria }}">{{ mensaje }}</div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            {% endwith %}
+
+            <form class="auth-form auth-form--minimal" action="{{ url_for('acceso') }}" method="post">
+                {{ form.hidden_tag() }}
+
+                <label class="auth-label" for="usuario">Correo</label>
+                {{ form.usuario(id="usuario", class="auth-input", placeholder="", autocomplete="username") }}
+                {% for error in form.usuario.errors %}
+                    <p class="auth-error">{{ error }}</p>
+                {% endfor %}
+
+                <label class="auth-label" for="contrasena">Contraseña</label>
+                {{ form.contrasena(id="contrasena", class="auth-input", placeholder="", autocomplete="current-password") }}
+                {% for error in form.contrasena.errors %}
+                    <p class="auth-error">{{ error }}</p>
+                {% endfor %}
+
+                <a class="auth-link" href="{{ url_for('recuperar') }}">¿Olvidaste tu contraseña?</a>
+                <button class="primary-button primary-button--full" type="submit">Iniciar sesión</button>
+                <a class="secondary-button secondary-button--ghost secondary-button--full" href="{{ url_for('registro') }}">Registrarme</a>
+            </form>
+        </section>
+    </main>
+</body>
+</html>

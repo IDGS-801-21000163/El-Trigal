@@ -1,0 +1,30 @@
+{% extends "layout.html" %}
+
+{% block page_title %}
+    Producción
+{% endblock %}
+
+{% block card_title %}
+    Registrar merma de {{ producto.nombre }}
+{% endblock %}
+
+{% block content %}
+<form method="POST" class="form-container">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="form-grid">
+        <label class="form-group">
+            <span>Cantidad de merma</span>
+            <input type="number" name="cantidad" min="1" class="form-input" required>
+        </label>
+        <label class="form-group form-group--full">
+            <span>Observación</span>
+            <input type="text" name="observacion" class="form-input" required>
+        </label>
+    </div>
+
+    <div class="button-row">
+        <button class="btn btn-primary" type="submit">Guardar</button>
+        <a href="{{ url_for('produccion.inicio') }}" class="btn btn-outline">Cancelar</a>
+    </div>
+</form>
+{% endblock %}

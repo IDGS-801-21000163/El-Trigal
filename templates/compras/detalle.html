@@ -1,0 +1,57 @@
+{% extends "layout.html" %}
+
+{% block page_title %}Gestión de Compras{% endblock %}
+{% block card_title %}Detalle de Compra{% endblock %}
+
+{% block content %}
+
+<section class="table-shell">
+    <div class="table-shell__header">
+        <h2>Compra #{{ compra.id }}</h2>
+        <p>{{ compra.fecha_creacion.strftime('%d/%m/%Y') if compra.fecha_creacion else '-' }}</p>
+    </div>
+
+    <div class="table-shell__body">
+        <div class="detail-grid">
+            <div class="detail-item">
+                <span>Proveedor</span>
+                <strong>{{ compra.proveedor.nombre_comercial if compra.proveedor else 'Proveedor no disponible' }}</strong>
+            </div>
+            <div class="detail-item">
+                <span>Empleado</span>
+                <strong>{{ compra.empleado.persona.nombre if compra.empleado and compra.empleado.persona else 'Sin empleado asociado' }}</strong>
+            </div>
+            <div class="detail-item">
+                <span>Total</span>
+                <strong>${{ compra.monto_total }}</strong>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="module-grid">
+    {% for d in compra.detalles %}
+    <article class="employee-card employee-card--uniform">
+        <div class="employee-header">
+            <div class="employee-main">
+                <h2 class="employee-name">{{ d.insumo.nombre if d.insumo else 'Insumo no disponible' }}</h2>
+                <p class="employee-role">{{ ('%.2f'|format(d.cantidad_comprada|float)).rstrip('0').rstrip('.') }} {{ d.unidad.nombre if d.unidad else 'unidad' }}</p>
+            </div>
+        </div>
+
+        <div class="employee-body">
+            <div class="employee-meta"><span>Costo unitario:</span> ${{ d.costo }}</div>
+            <div class="employee-meta"><span>Subtotal:</span> ${{ '%.2f'|format((d.cantidad_comprada|float) * (d.costo|float)) }}</div>
+            <div class="employee-meta"><span>Caducidad:</span> {{ d.fecha_caducidad.strftime('%d/%m/%Y') if d.fecha_caducidad else '-' }}</div>
+        </div>
+    </article>
+    {% else %}
+    <p class="empty-state">Esta compra no tiene detalles registrados.</p>
+    {% endfor %}
+</section>
+
+<div class="button-row">
+    <a href="{{ url_for('compras.inicio') }}" class="btn btn-outline">Volver</a>
+</div>
+
+{% endblock %}

@@ -1,0 +1,13 @@
+{% extends "layout.html" %}
+
+{% block page_title %}
+    {{ action_label }} {{ module['name'] }}
+{% endblock %}
+
+{% block card_title %}
+    {{ action_label }} {{ module['name'] }}
+{% endblock %}
+
+{% block content %}
+{% include "insumos/partials/form.html" %}
+{% endblock %}

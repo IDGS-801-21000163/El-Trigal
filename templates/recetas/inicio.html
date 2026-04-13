@@ -1,0 +1,74 @@
+{% extends "layout.html" %}
+{% block page_title %}Gestión de Receta{% endblock %}
+{% block card_title %}Recetas{% endblock %}
+{% block content %}
+<div class="toolbar toolbar--wrap">
+    <form method="GET">
+        <input
+            class="input-search"
+            type="text"
+            name="buscar"
+            value="{{ buscar or '' }}"
+            placeholder="Buscar receta...">
+
+        <select name="producto" class="form-input form-input--compact">
+            <option value="0">Todos los productos</option>
+            {% for p in productos %}
+                <option value="{{ p.id }}" {% if producto_id == p.id %}selected{% endif %}>{{ p.nombre }}</option>
+            {% endfor %}
+        </select>
+
+        <button class="btn btn-outline" type="submit">Filtrar</button>
+    </form>
+
+    <div class="toolbar-group">
+        <a href="{{ url_for('recetas.agregarReceta') }}" class="btn btn-primary">+ Agregar</a>
+    </div>
+</div>
+
+<section class="module-grid">
+    {% for r in receta %}
+    <article class="employee-card employee-card--uniform searchable receta-card"
+        data-nombre="{{ r.producto.nombre }}"
+        data-insumos="{% for d in r.detalles if d.estatus == 'ACTIVO' %}{{ d.insumo.nombre }} {% endfor %}">
+        <div class="employee-header">
+            <div class="avatar">R</div>
+            <div class="employee-main">
+                <h2 class="employee-name titulo">{{ r.producto.nombre }}</h2>
+                <p class="employee-role">{{ r.detalles|selectattr('estatus', 'equalto', 'ACTIVO')|list|length }} insumos</p>
+            </div>
+        </div>
+
+        <div class="employee-body">
+            <div class="employee-meta">
+                <span>Producto:</span> {{ r.producto.nombre }}
+            </div>
+            <div class="employee-meta">
+                <span>Componentes:</span>
+                {% set activos = (r.detalles | selectattr('estatus', 'equalto', 'ACTIVO') | list) %}
+                {% if activos %}
+                    {% for detalle in activos[:2] %}
+                        {{ detalle.insumo.nombre }}{% if not loop.last %}, {% endif %}
+                    {% endfor %}
+                    {% if activos|length > 2 %}...{% endif %}
+                {% else %}
+                    Sin insumos
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="employee-actions">
+            <a href="{{ url_for('recetas.detalleReceta') }}?id={{ r.id }}" class="btn btn-outline">Ver</a>
+            <a href="{{ url_for('recetas.editarReceta') }}?id={{ r.id }}" class="btn btn-primary">Editar</a>
+        </div>
+    </article>
+    {% else %}
+    <p class="empty-state">No hay recetas registradas.</p>
+    {% endfor %}
+</section>
+
+<script>
+// Busqueda/filtro migrado a servidor via ?buscar=...&producto=...
+</script>
+
+{% endblock %}

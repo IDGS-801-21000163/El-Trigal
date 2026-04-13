@@ -1,0 +1,24 @@
+<form method="POST" class="form-container">
+    {{ form.hidden_tag() }}
+
+    <h3 class="form-section-title">{{ action_label }} categoria de insumo</h3>
+
+    <div class="form-grid">
+        <label class="form-group">
+            <span>{{ form.nombre.label.text }}</span>
+            {{ form.nombre(class="form-input") }}
+            {% if form.nombre.errors %}<span class="form-error">{{ form.nombre.errors[0] }}</span>{% endif %}
+        </label>
+      
+        <label class="form-group form-group--full">
+            <span>{{ form.descripcion.label.text }}</span>
+            {{ form.descripcion(class="form-input", rows=5) }}
+            {% if form.descripcion.errors %}<span class="form-error">{{ form.descripcion.errors[0] }}</span>{% endif %}
+        </label>
+    </div>
+
+    <div class="button-row">
+        <button type="submit" class="btn btn-primary">{{ action_label }}</button>
+        <a href="{{ url_for('categorias_insumos.inicio') }}" class="btn btn-outline">Cancelar</a>
+    </div>
+</form>
