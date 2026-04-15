@@ -24,10 +24,6 @@
 
     <div class="detail-grid">
         <article class="detail-item">
-            <span>Merma configurada</span>
-            <strong>{{ '%.2f'|format(insumo.porcentaje_merma or 0) }}%</strong>
-        </article>
-        <article class="detail-item">
             <span>Estatus</span>
             <strong>{{ insumo.estatus }}</strong>
         </article>
@@ -68,8 +64,8 @@
                     {% for inventario in existencia.registros %}
                     <tr>
                         <td>{{ inventario.sucursal.nombre }}</td>
-                        <td>{{ '%.2f'|format(inventario.cantidad or 0) }}</td>
-                        <td>{{ inventario.unidad.nombre if inventario.unidad else '-' }}</td>
+                        <td>{{ '%.2f'|format(inventario.cantidad_display or 0) }}</td>
+                        <td>{{ inventario.unidad_display if inventario.unidad_display else (inventario.unidad.nombre if inventario.unidad else '-') }}</td>
                         <td>{{ inventario.fecha_caducidad.strftime('%d/%m/%Y %H:%M') if inventario.fecha_caducidad else '-' }}</td>
                         <td>{{ inventario.estatus or '-' }}</td>
                     </tr>

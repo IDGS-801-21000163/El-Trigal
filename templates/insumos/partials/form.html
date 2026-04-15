@@ -25,12 +25,6 @@
                     {{ form.fk_categoria(class="form-input") }}
                     {% if form.fk_categoria.errors %}<span class="form-error">{{ form.fk_categoria.errors[0] }}</span>{% endif %}
                 </label>
-                <label class="form-group">
-                    <span>{{ form.porcentaje_merma.label.text }}</span>
-                    {{ form.porcentaje_merma(class="form-input", step="0.01", min="0", max="100") }}
-                    {% if form.porcentaje_merma.errors %}<span class="form-error">{{ form.porcentaje_merma.errors[0] }}</span>{% endif %}
-                </label>
->
                 <label class="form-group form-group--full">
                     <span>{{ form.foto.label.text }}</span>
                     {{ form.foto(class="form-input", accept=".png,.jpg,.jpeg") }}

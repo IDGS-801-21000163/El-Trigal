@@ -8,6 +8,7 @@ from api.insumos import insumos
 from api.inventario_insumos import inventario_insumos
 from api.inventario_productos import inventario_productos
 from api.pedidos import pedidos
+from api.pedidos_presencial import pedidos_presencial
 from api.pos import pos
 from api.productos import productos
 from api.produccion import produccion
@@ -18,10 +19,15 @@ from api.sucursales import sucursales
 from api.usuarios import usuarios
 from api.ventas import ventas
 from api.solicitud_produccion import solicitud_produccion
+from api.dashboard import dashboard
+from api.reportes import reportes
 from api.dashboard_reportes import dashboard_reportes
 
 
 ALL_BLUEPRINTS = [
+    dashboard,
+    reportes,
+    dashboard_reportes,
     usuarios,
     puestos,
     empleados,
@@ -37,10 +43,10 @@ ALL_BLUEPRINTS = [
     inventario_productos,
     produccion,
     pedidos,
+    pedidos_presencial,
     ventas,
     pos,
     solicitud_produccion,
     clientes,
     costo_producto,
-    dashboard_reportes,
 ]

@@ -31,6 +31,23 @@ def _parse_number(value, field_name):
         raise ValueError(f"El campo {field_name} no es un número válido.") from exc
 
 
+def _unidad_to_base(unidad: UnidadMedida | None):
+    """Retorna (unidad_base, factor) donde factor multiplica una cantidad en `unidad`
+    para expresarla en la unidad base final.
+    """
+    if not unidad:
+        return None, Decimal("1")
+
+    factor = Decimal(str(unidad.factor_conversion or 1))
+    actual = unidad.unidad_base
+    base = actual
+    while actual:
+        base = actual
+        factor *= Decimal(str(actual.factor_conversion or 1))
+        actual = actual.unidad_base
+    return base or unidad, factor
+
+
 @compras.route("/")
 @compras.route("/inicio")
 def inicio():
@@ -210,7 +227,8 @@ def agregar():
                 for item in carrito:
                     unidad = UnidadMedida.query.get(item["fk_unidad"])
                     cantidad_comprada = Decimal(str(item["cantidad"]))
-                    factor_conversion = Decimal(str(unidad.factor_conversion or 1))
+                    unidad_base, factor_conversion = _unidad_to_base(unidad)
+                    # Guardamos inventario en unidad base para evitar sumas inconsistentes.
                     cantidad_convertida = cantidad_comprada * factor_conversion
                     fecha_caducidad = datetime.datetime.strptime(item["fecha_caducidad"], "%Y-%m-%d")
 
@@ -225,36 +243,25 @@ def agregar():
                     )
 
                     db.session.add(detalle)
+                    db.session.flush()
 
-                    inventario = InventarioInsumo.query.filter_by(
-                        fk_insumo=item["id"],
+                    # Inventario por lotes: cada compra_detalle crea su propio registro.
+                    cantidad_anterior = Decimal("0")
+                    cantidad_nueva = cantidad_convertida
+                    inventario = InventarioInsumo(
                         fk_sucursal=sucursal_id,
-                    ).first()
-
-                    if inventario:
-                        cantidad_anterior = Decimal(str(inventario.cantidad or 0))
-                        cantidad_nueva = cantidad_anterior + cantidad_convertida
-                        inventario.cantidad = cantidad_nueva
-                        inventario.fk_unidad = item["fk_unidad"]
-                        inventario.estatus = "DISPONIBLE"
-                        if not inventario.fecha_caducidad or fecha_caducidad < inventario.fecha_caducidad:
-                            inventario.fecha_caducidad = fecha_caducidad
-                        inventario.usuario_movimiento = usuario_id
-                    else:
-                        cantidad_anterior = Decimal("0")
-                        cantidad_nueva = cantidad_convertida
-                        inventario = InventarioInsumo(
-                            fk_sucursal=sucursal_id,
-                            fk_insumo=item["id"],
-                            fk_unidad=item["fk_unidad"],
-                            cantidad=cantidad_nueva,
-                            fecha_caducidad=fecha_caducidad,
-                            estatus="DISPONIBLE",
-                            usuario_creacion=usuario_id,
-                            usuario_movimiento=usuario_id,
-                        )
-                        db.session.add(inventario)
-                        db.session.flush()
+                        fk_insumo=item["id"],
+                        fk_unidad=(unidad_base.id if unidad_base else item["fk_unidad"]),
+                        cantidad=cantidad_nueva,
+                        fecha_caducidad=fecha_caducidad,
+                        estatus="DISPONIBLE",
+                        lote=f"C{compra.id}-D{detalle.id}",
+                        fk_compra_detalle=detalle.id,
+                        usuario_creacion=usuario_id,
+                        usuario_movimiento=usuario_id,
+                    )
+                    db.session.add(inventario)
+                    db.session.flush()
 
                     movimiento = InventarioInsumoMovimiento(
                         fk_inventario_insumo=inventario.id,

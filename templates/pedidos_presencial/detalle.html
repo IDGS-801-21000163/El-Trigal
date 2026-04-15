@@ -1,0 +1,53 @@
+{% extends "layout2.html" %}
+{% block content %}
+
+<div class="max-w-3xl mx-auto bg-white p-6 rounded-2xl shadow border border-[#f1e7cf]">
+
+    <h2 class="text-xl font-bold text-[#ae712f] mb-4">
+        Pedido #{{pedido.id}}
+    </h2>
+
+    <p><strong>Cliente:</strong> {{pedido.cliente.persona.nombre}}</p>
+    <p><strong>Entrega:</strong> {{pedido.fecha_entrega}}</p>
+    <p><strong>Estado:</strong> {{pedido.estado}}</p>
+
+    <hr class="my-4">
+
+    <!-- PRODUCTOS -->
+    {% for d in pedido.detalles %}
+    <div class="flex justify-between">
+        <span>{{d.producto.nombre}} x{{d.cantidad_producto}}</span>
+        <span>${{d.subtotal}}</span>
+    </div>
+    {% endfor %}
+
+    <hr class="my-4">
+
+    <div class="flex justify-between">
+        <span>Total</span>
+        <span>${{total}}</span>
+    </div>
+
+    <div class="flex justify-between">
+        <span>Anticipo</span>
+        <span>${{anticipo}}</span>
+    </div>
+
+    <div class="flex justify-between font-bold text-[#ae712f]">
+        <span>Saldo</span>
+        <span>${{saldo}}</span>
+    </div>
+
+    <div class="mt-6 flex justify-between">
+
+        <a href="{{url_for('pedidos.inicio')}}"
+           class="bg-gray-400 text-white px-4 py-2 rounded">
+            Volver
+        </a>
+
+
+    </div>
+
+</div>
+
+{% endblock %}

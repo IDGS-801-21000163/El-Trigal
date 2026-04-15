@@ -40,11 +40,17 @@
         <label class="form-group">
             <span>{{ form.fk_estado.label.text }}</span>
             {{ form.fk_estado(class="form-input") }}
+            {% if form.fk_estado.errors %}
+            <span class="form-error">{{ form.fk_estado.errors[0] }}</span>
+            {% endif %}
         </label>
 
         <label class="form-group">
             <span>{{ form.fk_municipio.label.text }}</span>
             {{ form.fk_municipio(class="form-input") }}
+            {% if form.fk_municipio.errors %}
+            <span class="form-error">{{ form.fk_municipio.errors[0] }}</span>
+            {% endif %}
         </label>
 
         {% for field in [form.calle, form.colonia, form.codigo_postal, form.num_exterior, form.num_interior] %}
@@ -132,7 +138,7 @@ document.addEventListener("DOMContentLoaded", function () {
             .then(r => r.json())
             .then(data => {
 
-                municipio.innerHTML = '<option value="">Seleccione municipio</option>'
+                municipio.innerHTML = '<option value="0" selected disabled>Seleccione municipio</option>'
 
                 data.municipios.forEach(m => {
                     const option = document.createElement("option")

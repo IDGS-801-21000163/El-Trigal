@@ -111,7 +111,7 @@ document.addEventListener("DOMContentLoaded", function () {
             .then(res => res.json())
             .then(data => {
 
-                municipio.innerHTML = '<option value="">Seleccione municipio</option>'
+                municipio.innerHTML = '<option value="0" selected disabled>Seleccione municipio</option>'
 
                 data.municipios.forEach(m => {
                     const option = document.createElement("option")

@@ -13,20 +13,49 @@
     <form method="POST" class="form-container">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <h3 class="form-section-title">Configurar lote manual</h3>
-        <div class="form-grid">
-            <label class="form-group">
-                <span>Producto a producir</span>
-                <select name="producto_id" class="form-input" required>
-                    <option value="">Selecciona un producto</option>
-                    {% for producto in productos %}
-                    <option value="{{ producto.id }}">{{ producto.nombre }}</option>
-                    {% endfor %}
-                </select>
-            </label>
-            <label class="form-group">
-                <span>Cantidad solicitada</span>
-                <input type="number" name="cantidad" min="1" class="form-input" required>
-            </label>
+        <p class="muted">Cada renglón representa una charola(s) de un solo tipo de pan (10 piezas por charola).</p>
+        <div id="trayLines" class="stack">
+            <div class="form-grid tray-line">
+                <label class="form-group">
+                    <span>Producto</span>
+                    <select name="producto_id" class="form-input" required>
+                        <option value="">Selecciona un producto</option>
+                        {% for producto in productos %}
+                        <option value="{{ producto.id }}">{{ producto.nombre }}</option>
+                        {% endfor %}
+                    </select>
+                </label>
+                <label class="form-group">
+                    <span>Charolas (10 piezas c/u)</span>
+                    <input type="number" name="cantidad" min="1" step="1" class="form-input" required>
+                </label>
+                <div class="form-group" style="display:flex;align-items:end;">
+                    <button type="button" class="btn btn-outline js-remove-line" disabled>Quitar</button>
+                </div>
+            </div>
+        </div>
+        <template id="trayLineTemplate">
+            <div class="form-grid tray-line">
+                <label class="form-group">
+                    <span>Producto</span>
+                    <select name="producto_id" class="form-input" required>
+                        <option value="">Selecciona un producto</option>
+                        {% for producto in productos %}
+                        <option value="{{ producto.id }}">{{ producto.nombre }}</option>
+                        {% endfor %}
+                    </select>
+                </label>
+                <label class="form-group">
+                    <span>Charolas (10 piezas c/u)</span>
+                    <input type="number" name="cantidad" min="1" step="1" class="form-input" required>
+                </label>
+                <div class="form-group" style="display:flex;align-items:end;">
+                    <button type="button" class="btn btn-outline js-remove-line">Quitar</button>
+                </div>
+            </div>
+        </template>
+        <div class="button-row">
+            <button type="button" class="btn btn-outline" id="addLine">+ Agregar otro producto</button>
         </div>
         <div class="button-row">
             <button class="btn btn-primary" type="submit">Crear orden</button>
@@ -44,7 +73,8 @@
                 <thead>
                     <tr>
                         <th>Producto</th>
-                        <th>Cantidad</th>
+                        <th>Charolas</th>
+                        <th>Piezas</th>
                         <th>Estado</th>
                         <th>Fecha</th>
                         <th>Acción</th>
@@ -54,6 +84,7 @@
                     {% for solicitud in solicitudes_pendientes %}
                     <tr>
                         <td>{{ solicitud.producto }}</td>
+                        <td>{{ solicitud.charolas }}</td>
                         <td>{{ solicitud.cantidad }}</td>
                         <td>{{ solicitud.estado }}</td>
                         <td>{{ solicitud.fecha.strftime('%d/%m/%Y %H:%M') if solicitud.fecha else '-' }}</td>
@@ -65,7 +96,7 @@
                     </tr>
                     {% else %}
                     <tr>
-                        <td colspan="5">No hay solicitudes pendientes por convertir en orden.</td>
+                        <td colspan="6">No hay solicitudes pendientes por convertir en orden.</td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -73,4 +104,41 @@
         </div>
     </div>
 </section>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+    const wrap = document.getElementById("trayLines");
+    const addBtn = document.getElementById("addLine");
+
+    function refreshRemoveButtons() {
+        const lines = wrap.querySelectorAll(".tray-line");
+        lines.forEach((line, idx) => {
+            const btn = line.querySelector(".js-remove-line");
+            if (!btn) return;
+            btn.disabled = lines.length <= 1;
+            btn.onclick = () => {
+                if (wrap.querySelectorAll(".tray-line").length <= 1) return;
+                line.remove();
+                refreshRemoveButtons();
+            };
+        });
+    }
+
+    addBtn.addEventListener("click", () => {
+        const tpl = document.getElementById("trayLineTemplate");
+        if (!tpl || !("content" in tpl)) return;
+        const clone = tpl.content.firstElementChild.cloneNode(true);
+        wrap.appendChild(clone);
+        if (window.SearchableSelect && typeof window.SearchableSelect.enhanceAll === "function") {
+            window.SearchableSelect.enhanceAll(clone);
+        }
+        refreshRemoveButtons();
+    });
+
+    refreshRemoveButtons();
+    if (window.SearchableSelect && typeof window.SearchableSelect.enhanceAll === "function") {
+        window.SearchableSelect.enhanceAll(wrap);
+    }
+});
+</script>
 {% endblock %}

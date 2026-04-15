@@ -1,11 +1,9 @@
-import csv
-import io
 from datetime import datetime, timedelta
 
-from flask import make_response, render_template, request
+from flask import render_template, request
 from sqlalchemy import func
 
-from . import dashboard_reportes
+from . import dashboard
 from models import (
     CategoriaInsumo,
     Compra,
@@ -19,13 +17,13 @@ from models import (
 
 
 MODULE = {
-    "name": "Dashboard y reportes",
-    "slug": "dashboard-reportes",
-    "description": "Indicadores operativos y reportes ejecutivos de ventas, produccion e inventario.",
+    "name": "Dashboard",
+    "slug": "dashboard",
+    "description": "Indicadores operativos de ventas, producción e inventarios.",
 }
 
 
-def _fecha_inicio(periodo):
+def _fecha_inicio(periodo: str) -> datetime:
     ahora = datetime.now()
     if periodo == "7d":
         return ahora - timedelta(days=7)
@@ -36,7 +34,7 @@ def _fecha_inicio(periodo):
     return ahora - timedelta(days=30)
 
 
-def _dashboard_data(periodo):
+def _dashboard_data(periodo: str):
     desde = _fecha_inicio(periodo)
     ventas_periodo = Venta.query.filter(Venta.fecha_creacion >= desde).all()
     compras_periodo = Compra.query.filter(Compra.fecha_creacion >= desde).all()
@@ -124,9 +122,7 @@ def _dashboard_data(periodo):
         .all()
     )
 
-    ventas_recientes = (
-        Venta.query.order_by(Venta.fecha_creacion.desc()).limit(8).all()
-    )
+    ventas_recientes = Venta.query.order_by(Venta.fecha_creacion.desc()).limit(8).all()
 
     dias = 7 if periodo == "7d" else 6 if periodo == "30d" else 8
     paso = 1 if periodo == "7d" else 5 if periodo == "30d" else 10
@@ -139,12 +135,7 @@ def _dashboard_data(periodo):
             for venta in ventas_periodo
             if inicio_dia <= venta.fecha_creacion < fin_dia
         )
-        ventas_series.append(
-            {
-                "label": inicio_dia.strftime("%d/%m"),
-                "total": round(total_dia, 2),
-            }
-        )
+        ventas_series.append({"label": inicio_dia.strftime("%d/%m"), "total": round(total_dia, 2)})
 
     max_ventas_series = max((item["total"] for item in ventas_series), default=0)
     for item in ventas_series:
@@ -215,66 +206,14 @@ def _dashboard_data(periodo):
     }
 
 
-@dashboard_reportes.route("/")
+@dashboard.route("/")
 def inicio():
     periodo = request.args.get("periodo", "30d", type=str)
     data = _dashboard_data(periodo)
     return render_template(
-        "dashboard-reportes/inicio.html",
+        "dashboard/inicio.html",
         module=MODULE,
         current_action="inicio",
         dashboard=data,
     )
 
-
-@dashboard_reportes.route("/exportar")
-def exportar():
-    periodo = request.args.get("periodo", "30d", type=str)
-    tipo = request.args.get("tipo", "resumen", type=str)
-    data = _dashboard_data(periodo)
-
-    rows = []
-    if tipo == "insumos":
-        rows = [
-            {
-                "nombre": item["nombre"],
-                "categoria": item["categoria"],
-                "cantidad": item["cantidad"],
-                "estado": item["estado"],
-                "caducidad": item["caducidad"].strftime("%Y-%m-%d %H:%M") if item["caducidad"] else "",
-            }
-            for item in data["insumos_criticos"]
-        ]
-    elif tipo == "ventas":
-        rows = [
-            {
-                "ticket": venta.folio_ticket,
-                "cliente": venta.cliente.persona.nombre if venta.cliente and venta.cliente.persona else "N/A",
-                "total": float(venta.total or 0),
-                "fecha": venta.fecha_creacion.strftime("%Y-%m-%d %H:%M"),
-                "estatus": venta.estatus,
-            }
-            for venta in data["ventas_recientes"]
-        ]
-    else:
-        rows = [
-            {"indicador": "Ventas", "valor": data["kpis"]["ventas"]},
-            {"indicador": "Compras", "valor": data["kpis"]["compras"]},
-            {"indicador": "Produccion", "valor": data["kpis"]["produccion"]},
-            {"indicador": "Pedidos pendientes", "valor": data["kpis"]["pedidos_pendientes"]},
-            {"indicador": "Insumos criticos", "valor": data["kpis"]["insumos_criticos"]},
-            {"indicador": "Productos activos", "valor": data["kpis"]["productos_activos"]},
-        ]
-
-    output = io.StringIO()
-    if rows:
-        writer = csv.DictWriter(output, fieldnames=list(rows[0].keys()))
-        writer.writeheader()
-        writer.writerows(rows)
-    else:
-        output.write("sin_datos\n")
-
-    response = make_response(output.getvalue())
-    response.headers["Content-Type"] = "text/csv; charset=utf-8"
-    response.headers["Content-Disposition"] = f"attachment; filename={tipo}-{periodo}.csv"
-    return response

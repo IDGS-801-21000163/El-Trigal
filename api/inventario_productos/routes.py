@@ -3,6 +3,7 @@ import base64
 from flask import render_template, request, redirect, url_for, flash
 from utils.modules import create_module_blueprint
 from models import db, InventarioProducto, Producto, Sucursal, InventarioProductoMovimiento
+from sqlalchemy import func
 from forms import (
     InventarioProductoForm, EditInventarioProductoForm,
     BuscarInventarioForm, ConfirmarEliminacionInventarioForm
@@ -35,36 +36,38 @@ def inicio():
     page = request.args.get('page', 1, type=int)
     buscar = request.args.get('buscar', '', type=str)
     estado_filter = request.args.get('estado', '', type=str)
+    lote_filter = request.args.get('lote', 'vigente', type=str)
 
     form = ConfirmarEliminacionInventarioForm()
 
     query = InventarioProducto.query.filter_by(estatus='ACTIVO')
+    today = datetime.now().date()
+
+    if lote_filter == "vigente":
+        query = query.filter(func.date(InventarioProducto.fecha_caducidad) >= today)
+    elif lote_filter == "caducado":
+        query = query.filter(func.date(InventarioProducto.fecha_caducidad) < today)
 
     # Filtrar por nombre de producto
     if buscar:
         query = query.join(Producto).filter(Producto.nombre.ilike(f'%{buscar}%'))
 
-    # Filtrar por estado
-    if estado_filter in ['EXISTENCIA', 'AGOTADO']:
-        query = query.filter_by(estado=estado_filter)
+    # Filtrar por "estado" derivado de existencia (la tabla no tiene columna `estado`)
+    if estado_filter == 'EXISTENCIA':
+        query = query.filter(InventarioProducto.cantidad_producto > 0)
+    elif estado_filter == 'AGOTADO':
+        query = query.filter(InventarioProducto.cantidad_producto <= 0)
 
     # Paginar resultados
     inventarios_list = query.paginate(page=page, per_page=12)
 
     inventarios_data = []
 
-    estado_corregido = False
     for inv in inventarios_list.items:
-        # Normalizar inconsistencias: si hay cantidad > 0, no debe estar AGOTADO.
         try:
             cantidad_val = float(inv.cantidad_producto or 0)
         except (TypeError, ValueError):
             cantidad_val = 0
-        estado_esperado = 'EXISTENCIA' if cantidad_val > 0 else 'AGOTADO'
-        if inv.estado != estado_esperado:
-            inv.estado = estado_esperado
-            inv.usuario_movimiento = get_user_id()
-            estado_corregido = True
 
         dias_restantes = None
         por_caducar = False
@@ -72,15 +75,15 @@ def inicio():
 
         # Calcular días restantes para caducidad
         if inv.fecha_caducidad:
-            dias_restantes = (inv.fecha_caducidad - datetime.now()).days
+            dias_restantes = (inv.fecha_caducidad.date() - today).days
 
             if dias_restantes < 0 and inv.cantidad_producto > 0:
                 caducado = True
             elif dias_restantes <= 3:
                 por_caducar = True
 
-        # Determinar badge de estado
-        if inv.estado == 'AGOTADO':
+        # Determinar badge de estado (derivado)
+        if cantidad_val <= 0:
             estado_clase = 'danger'
             estado_display = 'Agotado'
 
@@ -103,16 +106,12 @@ def inicio():
             'producto_id': inv.fk_producto,
             'producto_nombre': producto.nombre if producto else 'N/A',
             'categoria': producto.categoria.nombre if producto and producto.categoria else 'N/A',
-            'cantidad': int(inv.cantidad_producto),
+            'cantidad': int(cantidad_val),
             'fecha_caducidad': inv.fecha_caducidad.strftime('%Y-%m-%d'),
             'estado_display': estado_display,
             'estado_clase': estado_clase,
             'imagen': _format_image(producto.foto if producto else None)
         })
-
-    if estado_corregido:
-        # Persistir correcciones de estado para evitar que siga apareciendo inconsistente.
-        db.session.commit()
 
     # Alertas globales de caducidad
     hay_alerta = any("caducar" in inv["estado_display"] for inv in inventarios_data)
@@ -129,6 +128,7 @@ def inicio():
         hay_alerta_roja=hay_alerta_roja,
         buscar=buscar,
         estado=estado_filter,
+        lote=lote_filter,
     )
 
 
@@ -162,7 +162,6 @@ def editar(id):
 
             # Actualizar inventario
             inventario.cantidad_producto = nueva_cantidad
-            inventario.estado = 'EXISTENCIA' if nueva_cantidad > 0 else 'AGOTADO'
             inventario.usuario_movimiento = get_user_id()
 
             # Registrar movimiento
@@ -237,3 +236,19 @@ def eliminar(id):
 def not_found(error):
     flash('El registro de inventario no fue encontrado', 'error')
     return redirect(url_for('inventario_productos.inicio')), 404
+
+
+@inventario_productos.route('/merma/<int:id>', methods=['POST'])
+def marcar_merma(id):
+    inventario = InventarioProducto.query.get_or_404(id)
+
+    if inventario.es_merma:
+        flash("Este lote ya está marcado como merma.", "warning")
+        return redirect(url_for("inventario_productos.inicio"))
+
+    inventario.es_merma = True
+    inventario.usuario_movimiento = get_user_id()
+    db.session.commit()
+
+    flash("Lote marcado como merma.", "success")
+    return redirect(url_for("inventario_productos.inicio", lote="caducado"))

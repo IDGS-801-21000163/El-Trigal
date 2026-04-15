@@ -12,6 +12,11 @@
             name="buscar"
             value="{{ buscar or '' }}"
             placeholder="Buscar categoría...">
+        <select class="form-input form-input--compact" name="estatus" style="max-width:220px;">
+            <option value="ACTIVO" {% if (estatus or 'ACTIVO') == 'ACTIVO' %}selected{% endif %}>Activas</option>
+            <option value="INACTIVO" {% if estatus == 'INACTIVO' %}selected{% endif %}>Inactivas</option>
+            <option value="TODOS" {% if estatus == 'TODOS' %}selected{% endif %}>Todas</option>
+        </select>
         <button class="btn btn-outline" type="submit">Buscar</button>
     </form>
     <div class="toolbar-group">
@@ -20,6 +25,9 @@
 </div>
 
 <form id="deleteCategoriaForm" method="POST" style="display:none;">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+</form>
+<form id="activateCategoriaForm" method="POST" style="display:none;">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 </form>
 
@@ -45,13 +53,23 @@
         <div class="employee-actions employee-actions--stack-mobile">
             <a href="{{ url_for('categorias_productos.detalle', id=cat.id) }}" class="btn btn-outline">Ver</a>
             <a href="{{ url_for('categorias_productos.editar', id=cat.id) }}" class="btn btn-primary">Editar</a>
-            <button
-                type="button"
-                class="btn btn-danger-outline btn-full-row js-delete-category"
-                data-url="{{ url_for('categorias_productos.eliminar', id=cat.id) }}"
-                data-name="{{ cat.nombre }}">
-                Eliminar
-            </button>
+            {% if (estatus or 'ACTIVO') == 'INACTIVO' %}
+                <button
+                    type="button"
+                    class="btn btn-outline btn-full-row js-activate-category"
+                    data-url="{{ url_for('categorias_productos.activar', id=cat.id) }}"
+                    data-name="{{ cat.nombre }}">
+                    Activar
+                </button>
+            {% else %}
+                <button
+                    type="button"
+                    class="btn btn-danger-outline btn-full-row js-delete-category"
+                    data-url="{{ url_for('categorias_productos.eliminar', id=cat.id) }}"
+                    data-name="{{ cat.nombre }}">
+                    Eliminar
+                </button>
+            {% endif %}
         </div>
     </article>
     {% else %}
@@ -62,6 +80,7 @@
 <script>
 document.addEventListener("DOMContentLoaded", () => {
     const form = document.getElementById("deleteCategoriaForm");
+    const activateForm = document.getElementById("activateCategoriaForm");
 
     document.querySelectorAll(".js-delete-category").forEach((button) => {
         button.addEventListener("click", async () => {
@@ -74,6 +93,22 @@ document.addEventListener("DOMContentLoaded", () => {
             if (result.isConfirmed) {
                 form.action = button.dataset.url;
                 form.submit();
+            }
+        });
+    });
+
+    document.querySelectorAll(".js-activate-category").forEach((button) => {
+        button.addEventListener("click", async () => {
+            const result = await window.showConfirmDialog({
+                title: "Activar categoría",
+                text: `Se activará "${button.dataset.name}".`,
+                confirmText: "Sí, activar",
+                cancelText: "Cancelar"
+            });
+
+            if (result.isConfirmed) {
+                activateForm.action = button.dataset.url;
+                activateForm.submit();
             }
         });
     });

@@ -12,6 +12,11 @@
             name="buscar"
             value="{{ buscar or '' }}"
             placeholder="Buscar cliente...">
+        <select class="form-input form-input--compact" name="estatus" style="max-width:220px;">
+            <option value="ACTIVO" {% if (estatus or 'ACTIVO') == 'ACTIVO' %}selected{% endif %}>Activos</option>
+            <option value="INACTIVO" {% if estatus == 'INACTIVO' %}selected{% endif %}>Inactivos</option>
+            <option value="TODOS" {% if estatus == 'TODOS' %}selected{% endif %}>Todos</option>
+        </select>
         <button class="btn btn-outline" type="submit">Buscar</button>
     </form>
     <div class="toolbar-group">
@@ -45,13 +50,23 @@
 
         <div class="employee-actions employee-actions--stack-mobile">
             <a href="{{ url_for('clientes.editar', id=cliente.id) }}" class="btn btn-primary">Editar</a>
-            <button
-                type="button"
-                class="btn btn-danger-outline btn-full-row js-delete-client"
-                data-url="{{ url_for('clientes.eliminar', id=cliente.id) }}"
-                data-name="{{ cliente.nombre }} {{ cliente.apellido_uno }}">
-                Eliminar
-            </button>
+            {% if (estatus or 'ACTIVO') == 'INACTIVO' %}
+                <button
+                    type="button"
+                    class="btn btn-outline btn-full-row js-activate-client"
+                    data-url="{{ url_for('clientes.activar', id=cliente.id) }}"
+                    data-name="{{ cliente.nombre }} {{ cliente.apellido_uno }}">
+                    Activar
+                </button>
+            {% else %}
+                <button
+                    type="button"
+                    class="btn btn-danger-outline btn-full-row js-delete-client"
+                    data-url="{{ url_for('clientes.eliminar', id=cliente.id) }}"
+                    data-name="{{ cliente.nombre }} {{ cliente.apellido_uno }}">
+                    Eliminar
+                </button>
+            {% endif %}
         </div>
     </article>
     {% else %}
@@ -69,6 +84,22 @@ document.addEventListener("DOMContentLoaded", () => {
                 title: "Eliminar cliente",
                 text: `Se eliminará "${button.dataset.name}".`,
                 confirmText: "Sí, eliminar"
+            });
+
+            if (result.isConfirmed) {
+                form.action = button.dataset.url;
+                form.submit();
+            }
+        });
+    });
+
+    document.querySelectorAll(".js-activate-client").forEach((button) => {
+        button.addEventListener("click", async () => {
+            const result = await window.showConfirmDialog({
+                title: "Activar cliente",
+                text: `Se activará "${button.dataset.name}".`,
+                confirmText: "Sí, activar",
+                cancelText: "Cancelar",
             });
 
             if (result.isConfirmed) {

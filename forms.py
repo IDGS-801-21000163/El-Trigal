@@ -589,12 +589,14 @@ class SucursalForm(FlaskForm):
             raise ValidationError("Ya existe una sucursal con este teléfono")
 
 class InventarioInsumoForm(FlaskForm):
-    cantidad = IntegerField(
-        "Cantidad",
+    cantidad = DecimalField(
+        "Cantidad a ajustar",
         validators=[
             DataRequired(message="La cantidad es obligatoria"),
-            NumberRange(min=0, message="La cantidad no puede ser negativa")
-        ]
+            NumberRange(min=0, message="La cantidad no puede ser negativa"),
+        ],
+        places=2,
+        render_kw={"placeholder": "0.00", "step": "0.01", "min": "0"},
     )
     tipo_movimiento = SelectField(
         "Tipo de movimiento",
@@ -672,16 +674,6 @@ class InsumoForm(FlaskForm):
             DataRequired(message="El nombre es obligatorio"),
             Length(min=3, max=65, message="Debe tener entre 3 y 65 caracteres"),
         ],
-    )
-
-    porcentaje_merma = DecimalField(
-        "Porcentaje de merma",
-        places=2,
-        validators=[
-            DataRequired(message="El porcentaje de merma es obligatorio"),
-            NumberRange(min=0, max=100, message="Debe estar entre 0 y 100"),
-        ],
-        default=0,
     )
 
     foto = FileField(

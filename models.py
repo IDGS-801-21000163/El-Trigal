@@ -154,7 +154,7 @@ class Persona(db.Model):
     apellido_dos       = db.Column(db.String(65), nullable=True)
     telefono           = db.Column(db.String(15), nullable=True,  unique=True)
     correo             = db.Column(db.String(254),nullable=True,  unique=True)
-    foto               = db.Column(db.Text,       nullable=True)   # base64
+    foto               = db.Column(db.LargeBinary(length=2**32 - 1), nullable=True)  # BLOB/LONGBLOB
     estatus            = db.Column(db.Enum('ACTIVO', 'INACTIVO'), nullable=False, default='ACTIVO')
     fecha_creacion     = db.Column(db.DateTime,   nullable=False, default=datetime.datetime.now)
     usuario_creacion   = db.Column(db.Integer,    db.ForeignKey('usuario.id'), nullable=False)
@@ -274,7 +274,8 @@ class Insumo(db.Model):
     fk_categoria       = db.Column(db.Integer,      db.ForeignKey('categoria_insumo.id'), nullable=False)
     nombre             = db.Column(db.String(65),   nullable=False, unique=True)
     porcentaje_merma   = db.Column(db.Numeric(5,2), nullable=False, default=0.00)
-    foto               = db.Column(db.Text,         nullable=True)   # base64
+    # En BD normalmente es BLOB/LONGBLOB. Conservamos compat: el runtime tambien soporta strings base64 viejos.
+    foto               = db.Column(db.LargeBinary(length=2**32 - 1), nullable=True)
     estatus            = db.Column(db.Enum('ACTIVO', 'INACTIVO'), nullable=False, default='ACTIVO')
     fecha_creacion     = db.Column(db.DateTime,     nullable=False, default=datetime.datetime.now)
     usuario_creacion   = db.Column(db.Integer,      db.ForeignKey('usuario.id'), nullable=False)

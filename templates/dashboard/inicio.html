@@ -17,9 +17,7 @@
             <option value="90d" {% if dashboard.periodo == '90d' %}selected{% endif %}>Ultimos 90 dias</option>
         </select>
         <button class="btn btn-outline" type="submit">Actualizar</button>
-        <a class="btn btn-outline" href="{{ url_for('dashboard_reportes.exportar', periodo=dashboard.periodo, tipo='resumen') }}">Resumen CSV</a>
-        <a class="btn btn-outline" href="{{ url_for('dashboard_reportes.exportar', periodo=dashboard.periodo, tipo='insumos') }}">Alertas CSV</a>
-        <a class="btn btn-primary" href="{{ url_for('dashboard_reportes.exportar', periodo=dashboard.periodo, tipo='ventas') }}">Ventas CSV</a>
+        <a class="btn btn-outline" href="{{ url_for('reportes.inicio', periodo=dashboard.periodo) }}">Ir a reportes</a>
     </form>
 
     <section class="dashboard-modern__kpis">
@@ -137,3 +135,4 @@
     </section>
 </section>
 {% endblock %}
+

@@ -24,7 +24,6 @@
                     <th style="padding:10px 12px; text-align:left;">Insumo</th>
                     <th style="padding:10px 12px; text-align:left;">Cantidad</th>
                     <th style="padding:10px 12px; text-align:left;">Unidad</th>
-                    <th style="padding:10px 12px; text-align:left;">Merma %</th>
                 </tr>
             </thead>
             <tbody>
@@ -34,7 +33,6 @@
                     <td style="padding:10px 12px;">{{ detalle.insumo.nombre }}</td>
                     <td style="padding:10px 12px;">{{ detalle.cantidad_insumo }}</td>
                     <td style="padding:10px 12px;">{{ detalle.unidad.nombre if detalle.unidad else '—' }}</td>
-                    <td style="padding:10px 12px;">{{ detalle.insumo.porcentaje_merma }}%</td>
                 </tr>
                 {% endif %}
                 {% endfor %}

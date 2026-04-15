@@ -20,6 +20,17 @@
     const existingEmpty = selectEl.querySelector("option[value='']");
     if (existingEmpty) return;
 
+    // Many existing forms use value="0" as a placeholder. Avoid duplicating it.
+    const existingZero = selectEl.querySelector("option[value='0']");
+    if (existingZero) {
+      const text = normalizeText(existingZero.textContent);
+      const looksLikePlaceholder =
+        existingZero.disabled ||
+        text === normalizeText(DEFAULT_PLACEHOLDER) ||
+        text.startsWith(normalizeText(DEFAULT_PLACEHOLDER));
+      if (looksLikePlaceholder) return;
+    }
+
     const opt = document.createElement("option");
     opt.value = "";
     opt.textContent = selectEl.dataset.ssPlaceholderText || DEFAULT_PLACEHOLDER;
@@ -186,6 +197,12 @@
     const selects = root.querySelectorAll("select");
     selects.forEach(enhanceSelect);
   }
+
+  // Expose a small API so pages that dynamically add selects (repeatable forms)
+  // can re-run enhancement only on the new subtree.
+  window.SearchableSelect = {
+    enhanceAll,
+  };
 
   document.addEventListener("DOMContentLoaded", () => {
     enhanceAll();

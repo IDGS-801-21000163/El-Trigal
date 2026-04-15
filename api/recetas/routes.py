@@ -2,7 +2,22 @@ from . import recetas
 from flask import render_template, request, redirect, url_for, flash
 from sqlalchemy import or_
 from models import db, Receta, RecetaDetalle, Producto, UnidadMedida, Insumo
+from models import CompraDetalle
 import forms
+import base64
+from decimal import Decimal
+
+
+def _format_insumo_image(foto):
+    if not foto:
+        return None
+    if isinstance(foto, (bytes, bytearray)):
+        return f"data:image/png;base64,{base64.b64encode(foto).decode('utf-8')}"
+    if isinstance(foto, str):
+        if foto.startswith("data:image"):
+            return foto
+        return f"data:image/png;base64,{foto}"
+    return None
 
 
 def cargar_choices(form):
@@ -26,7 +41,7 @@ def obtener_imagenes(form):
             if insumo and insumo.foto:
                 imagenes_insumos[i] = {
                     "nombre": insumo.nombre,
-                    "imagen": insumo.foto
+                    "imagen": _format_insumo_image(insumo.foto)
                 }
             else:
                 imagenes_insumos[i] = None
@@ -36,6 +51,59 @@ def obtener_imagenes(form):
     return imagenes_insumos
 
 
+def _factor_unidad_base(unidad):
+    if not unidad:
+        return Decimal("1")
+    factor = Decimal(str(unidad.factor_conversion or 1))
+    actual = unidad.unidad_base
+    while actual:
+        factor *= Decimal(str(actual.factor_conversion or 1))
+        actual = actual.unidad_base
+    return factor
+
+
+def _recalcular_costo_produccion(producto_id):
+    receta = Receta.query.filter_by(fk_producto=producto_id, estatus="ACTIVO").first()
+    if not receta:
+        return
+
+    total = Decimal("0")
+    for det in RecetaDetalle.query.filter_by(fk_receta=receta.id, estatus="ACTIVO").all():
+        # Tomar el último costo registrado de compra para ese insumo.
+        compra = (
+            CompraDetalle.query.filter_by(fk_insumo=det.fk_insumo, estatus="ACTIVO")
+            .order_by(CompraDetalle.id.desc())
+            .first()
+        )
+        if not compra or not compra.unidad:
+            continue
+
+        factor_compra = _factor_unidad_base(compra.unidad)  # unidad compra -> unidad base
+        if factor_compra <= 0:
+            continue
+
+        # costo por unidad de compra (según UI: costo unitario)
+        costo_compra = Decimal(str(compra.costo or 0))
+        costo_base = (costo_compra / factor_compra)  # costo por unidad base (gramo/ml/pieza)
+
+        # En el formulario la receta captura cantidad con una unidad seleccionada,
+        # así que convertimos a unidad base para costear.
+        unidad_receta = UnidadMedida.query.get(det.fk_unidad) if det.fk_unidad else None
+        factor_receta = _factor_unidad_base(unidad_receta)
+        if factor_receta <= 0:
+            continue
+
+        cantidad = Decimal(str(det.cantidad_insumo or 0))
+        cantidad_base = cantidad * factor_receta
+        total += cantidad_base * costo_base
+
+    producto = Producto.query.get(producto_id)
+    if not producto:
+        return
+    producto.costo_produccion = total.quantize(Decimal("0.01"))
+    db.session.commit()
+
+
 @recetas.route("/")
 @recetas.route("/inicio")
 def inicio():
@@ -43,8 +111,11 @@ def inicio():
 
     buscar = request.args.get("buscar", "", type=str).strip()
     producto_id = request.args.get("producto", 0, type=int)
+    estatus = request.args.get("estatus", "ACTIVO", type=str).strip().upper()
 
-    query = Receta.query.filter(Receta.estatus == 'ACTIVO')
+    query = Receta.query
+    if estatus in {"ACTIVO", "INACTIVO"}:
+        query = query.filter(Receta.estatus == estatus)
     # 🔍 filtro por texto
     if buscar:
         like = f"%{buscar}%"
@@ -69,6 +140,7 @@ def inicio():
         productos=productos,
         buscar=buscar,
         producto_id=producto_id,
+        estatus=estatus,
     )
 
 
@@ -76,7 +148,7 @@ def inicio():
 def detalleReceta():
     id = request.args.get('id')
 
-    receta = db.session.query(Receta).filter(Receta.id == id, Receta.estatus == "ACTIVO").first()
+    receta = db.session.query(Receta).filter(Receta.id == id).first()
 
     if not receta:
         flash("Receta no encontrada", "error")
@@ -84,12 +156,17 @@ def detalleReceta():
 
     producto = receta.producto
     detalles = receta.detalles
+    imagenes_detalles = {
+        d.id: _format_insumo_image(d.insumo.foto) if d.insumo and d.insumo.foto else None
+        for d in detalles
+    }
 
     return render_template(
         'recetas/detalle.html',
         receta=receta,
         producto=producto,
-        detalles=detalles
+        detalles=detalles,
+        imagenes_detalles=imagenes_detalles,
     )
 
 
@@ -235,6 +312,9 @@ def agregarReceta():
         db.session.commit()
 
         flash("Receta agregada correctamente", "success")
+
+        # Actualizar costo de producción del producto desde la receta.
+        _recalcular_costo_produccion(form.fk_producto.data)
         return render_template(
             "recetas/agregar.html",
             form=form,
@@ -429,6 +509,9 @@ def editarReceta():
 
         flash("Receta actualizada correctamente", "success")
 
+        # Actualizar costo de producción del producto desde la receta.
+        _recalcular_costo_produccion(receta.fk_producto)
+
         return render_template(
             "recetas/editar.html",
             form=form,
@@ -456,3 +539,22 @@ def eliminarReceta():
 
     flash("Receta eliminada correctamente", "success")
     return redirect(url_for("recetas.inicio"))
+
+
+@recetas.route("/activarR", methods=["POST"])
+def activarReceta():
+    id = request.form.get("id")
+    receta = Receta.query.get_or_404(id)
+
+    if receta.estatus == "ACTIVO":
+        flash("La receta ya está activa", "warning")
+        return redirect(url_for("recetas.inicio"))
+
+    receta.estatus = "ACTIVO"
+    # Reactivar detalles (si existen) como ACTIVO.
+    for detalle in receta.detalles:
+        detalle.estatus = "ACTIVO"
+    db.session.commit()
+
+    flash("Receta activada correctamente", "success")
+    return redirect(url_for("recetas.inicio", estatus="INACTIVO"))

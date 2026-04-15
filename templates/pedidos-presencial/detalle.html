@@ -1,0 +1,118 @@
+{% extends "layout.html" %}
+
+{% block page_title %}
+    {{ module['name'] }}
+{% endblock %}
+
+{% block card_title %}
+    Pedido #{{ pedido.id }}
+{% endblock %}
+
+{% block content %}
+<section class="page-stack">
+    <article class="card card--flat">
+        <div class="card-body">
+            <div class="grid grid--2">
+                <div>
+                    <div class="muted">Cliente</div>
+                    <strong>
+                        {{ pedido.cliente.persona.nombre if pedido.cliente and pedido.cliente.persona else 'N/A' }}
+                        {{ pedido.cliente.persona.apellido_uno if pedido.cliente and pedido.cliente.persona else '' }}
+                        {{ pedido.cliente.persona.apellido_dos if pedido.cliente and pedido.cliente.persona else '' }}
+                    </strong>
+                </div>
+                <div>
+                    <div class="muted">Entrega</div>
+                    <strong>{{ pedido.fecha_entrega.strftime('%Y-%m-%d') if pedido.fecha_entrega else 'N/A' }}</strong>
+                </div>
+                <div>
+                    <div class="muted">Estado</div>
+                    <strong>{{ pedido.estado }}</strong>
+                </div>
+                <div>
+                    <div class="muted">Tipo</div>
+                    <strong>{{ pedido.tipo_pedido }}</strong>
+                </div>
+            </div>
+
+            {% if pedido.notas %}
+                <div style="margin-top: 10px;">
+                    <div class="muted">Notas</div>
+                    <div>{{ pedido.notas }}</div>
+                </div>
+            {% endif %}
+
+            <hr class="divider">
+
+            <div class="grid grid--2">
+                <div class="card card--flat" style="padding: 12px;">
+                    <div class="muted">Total</div>
+                    <strong>${{ '%.2f'|format(total) }}</strong>
+                </div>
+                <div class="card card--flat" style="padding: 12px;">
+                    <div class="muted">Anticipo</div>
+                    <strong>${{ '%.2f'|format(anticipo) }}</strong>
+                </div>
+                <div class="card card--flat" style="padding: 12px;">
+                    <div class="muted">Saldo</div>
+                    <strong>${{ '%.2f'|format(saldo) }}</strong>
+                </div>
+                <div class="card card--flat" style="padding: 12px;">
+                    <div class="muted">Productos</div>
+                    <strong>{{ pedido.detalles|length if pedido.detalles else 0 }}</strong>
+                </div>
+            </div>
+        </div>
+    </article>
+
+    <article class="card card--flat">
+        <div class="card-header">
+            <span class="card-title">Detalle</span>
+        </div>
+        <div class="card-body">
+            {% if pedido.detalles %}
+                <div class="grid grid--2">
+                    {% for d in pedido.detalles %}
+                        <div class="card card--flat" style="padding: 12px;">
+                            <strong>{{ d.producto.nombre if d.producto else 'Producto' }}</strong>
+                            <div class="muted">{{ d.cantidad_producto }} pzas</div>
+                            <div class="muted">Subtotal: ${{ '%.2f'|format(d.subtotal or 0) }}</div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="muted">Sin productos.</div>
+            {% endif %}
+        </div>
+    </article>
+
+    <article class="card card--flat">
+        <div class="card-header">
+            <span class="card-title">Cambiar estado</span>
+        </div>
+        <div class="card-body">
+            <form method="post" action="{{ url_for('pedidos_presencial.cambiar_estado', pedido_id=pedido.id) }}" class="toolbar toolbar--wrap">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <label class="toolbar__field" style="min-width: 280px;">
+                    <span class="toolbar__label">Nuevo estado</span>
+                    <select class="form-input form-input--compact" name="estado" required>
+                        <option value="0">Seleccione una opción</option>
+                        {% if pedido.estado == 'ESPERANDO' %}
+                            <option value="EN PRODUCCION">EN PRODUCCION</option>
+                            <option value="CANCELADO">CANCELADO</option>
+                        {% elif pedido.estado == 'EN PRODUCCION' %}
+                            <option value="LISTO">LISTO</option>
+                        {% endif %}
+                    </select>
+                </label>
+                <button class="btn btn-primary" type="submit">Actualizar</button>
+                <a class="btn btn-outline" href="{{ url_for('pedidos_presencial.inicio') }}">Volver</a>
+            </form>
+            <div class="muted" style="margin-top: 10px;">
+                Nota: El estado <strong>ENTREGADO</strong> se genera al registrar la venta.
+            </div>
+        </div>
+    </article>
+</section>
+{% endblock %}
+

@@ -78,7 +78,7 @@
                     <div class="receta-insumo-preview">
                         {% set img = imagenes_insumos.get(loop.index0) %}
                         {% if img %}
-                        <img src="data:image/png;base64,{{ img.imagen }}" alt="{{ img.nombre }}">
+                        <img src="{{ img.imagen }}" alt="{{ img.nombre }}">
                         <span>{{ img.nombre }}</span>
                         {% else %}
                         <span>Sin imagen</span>

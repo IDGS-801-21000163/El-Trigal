@@ -6,6 +6,7 @@ import base64
 from utils.session import get_current_employee_id, get_current_user_id
 
 solicitud_produccion = create_module_blueprint("solicitud-produccion")
+CHAROLA_TAMANO = 10
 
 
 def get_user_id():
@@ -90,10 +91,10 @@ def inicio():
 @solicitud_produccion.route("/agregar", methods=["POST"])
 def agregar():
     producto_id = request.form.get("producto_id")
-    cantidad = request.form.get("cantidad")
+    charolas = request.form.get("cantidad")
 
     # Validaciones básicas
-    if not producto_id or not cantidad:
+    if not producto_id or not charolas:
         flash("Datos incompletos", "error")
         return redirect(url_for("solicitud_produccion.inicio"))
 
@@ -114,18 +115,20 @@ def agregar():
         return redirect(url_for("solicitud_produccion.inicio"))
 
     try:
-        cantidad = int(cantidad)
-        if cantidad <= 0:
+        charolas = int(charolas)
+        if charolas <= 0:
             raise ValueError
-    except:
-        flash("La cantidad debe ser mayor a 0", "error")
+    except Exception:
+        flash("Las charolas deben ser un número mayor a 0.", "error")
         return redirect(url_for("solicitud_produccion.inicio"))
+
+    piezas = charolas * CHAROLA_TAMANO
 
     # Crear solicitud
     nueva = SolicitudProduccion(
         fk_producto=producto.id,
         fk_empleado=get_empleado_id(),
-        cantidad_solicitada=cantidad,
+        cantidad_solicitada=piezas,
         estado="PENDIENTE",
         usuario_creacion=get_user_id(),
         usuario_movimiento=get_user_id()
@@ -160,10 +163,13 @@ def detalle():
     # Construir lista de datos para el template
     ordenes_data = []
     for o in ordenes:
+        piezas = int(o.cantidad_solicitada or 0)
+        charolas = piezas // CHAROLA_TAMANO if piezas > 0 else 0
         ordenes_data.append({
             "id": o.id,
             "producto": o.producto.nombre,
-            "cantidad": o.cantidad_solicitada,
+            "cantidad": piezas,
+            "charolas": charolas,
             "estado": o.estado
         })
 

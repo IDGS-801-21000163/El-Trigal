@@ -22,11 +22,16 @@
         </article>
         <article class="detail-item">
             <span>Cantidad solicitada</span>
-            <strong>{{ detalle.cantidad_solicitada }}</strong>
+            {% set charolas = (detalle.cantidad_solicitada // 10) %}
+            <strong>{{ charolas }} charolas ({{ detalle.cantidad_solicitada }} piezas)</strong>
         </article>
         <article class="detail-item">
             <span>Estado</span>
             <strong>{{ produccion.estado }}</strong>
+        </article>
+        <article class="detail-item">
+            <span>Stock actual (vigente)</span>
+            <strong>{{ inventario_total }}</strong>
         </article>
     </div>
 
@@ -69,8 +74,8 @@
         {% if produccion.estado != 'TERMINADO' %}
         <button class="btn btn-primary" type="submit">Guardar y cerrar</button>
         {% endif %}
-        <a href="{% if produccion.estado == 'TERMINADO' %}{{ url_for('produccion.inicio') }}{% else %}{{ url_for('produccion.proceso', id=produccion.id) }}{% endif %}" class="btn btn-outline">
-            {% if produccion.estado == 'TERMINADO' %}Volver al listado{% else %}Volver a la guía{% endif %}
+        <a href="{{ url_for('produccion.lote', id=produccion.id) }}" class="btn btn-outline">
+            Volver al lote
         </a>
     </div>
 </form>

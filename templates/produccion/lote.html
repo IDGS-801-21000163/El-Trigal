@@ -1,0 +1,58 @@
+{% extends "layout.html" %}
+
+{% block page_title %}
+    Producción
+{% endblock %}
+
+{% block card_title %}
+    Lote #{{ produccion.id }} · {{ produccion.estado }}
+{% endblock %}
+
+{% block content %}
+<section class="module-dashboard">
+    <div class="toolbar toolbar--wrap">
+        <a href="{{ url_for('produccion.inicio') }}" class="btn btn-outline">Volver</a>
+    </div>
+
+    <div class="table-shell">
+        <div class="table-shell__header">
+            <h2>Charolas del lote</h2>
+            <p>Cada charola es de un solo tipo de pan (10 piezas por charola).</p>
+        </div>
+        <div class="table-shell__body">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Producto</th>
+                        <th>Charolas</th>
+                        <th>Piezas objetivo</th>
+                        <th>Avance</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in items %}
+                    <tr>
+                        <td>{{ item.producto }}</td>
+                        <td>{{ item.charolas }}</td>
+                        <td>{{ item.piezas }}</td>
+                        <td>Paso {{ item.paso_actual }} de {{ item.pasos_total }}</td>
+                        <td>
+                            {% if produccion.estado == 'PENDIENTE' %}
+                                <a class="btn btn-primary" href="{{ url_for('produccion.iniciar_detalle', id=produccion.id, detalle_id=item.detalle_id) }}">Comenzar guía</a>
+                            {% elif produccion.estado == 'EN PROCESO' %}
+                                <a class="btn btn-primary" href="{{ url_for('produccion.proceso_detalle', id=produccion.id, detalle_id=item.detalle_id) }}">Continuar</a>
+                                <a class="btn btn-outline" href="{{ url_for('produccion.terminar_detalle', id=produccion.id, detalle_id=item.detalle_id) }}">Cerrar charola</a>
+                            {% else %}
+                                <a class="btn btn-outline" href="{{ url_for('produccion.terminar_detalle', id=produccion.id, detalle_id=item.detalle_id) }}">Ver cierre</a>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
+{% endblock %}
+

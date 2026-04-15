@@ -100,7 +100,7 @@ document.addEventListener("DOMContentLoaded", () => {
         button.addEventListener("click", async () => {
             const result = await window.showInputDialog({
                 title: "Nueva solicitud de producción",
-                text: `Indica cuántas piezas de "${button.dataset.productName}" deseas solicitar.`,
+                text: `Indica cuántas charolas de "${button.dataset.productName}" deseas solicitar. Cada charola produce 10 piezas.`,
                 itemText: `Producto: ${button.dataset.productName}`,
                 confirmText: "Crear solicitud",
                 cancelText: "Cancelar",
@@ -117,7 +117,7 @@ document.addEventListener("DOMContentLoaded", () => {
                         return "";
                     }
                 },
-                inputLabel: "Cantidad requerida"
+                inputLabel: "Charolas (10 piezas c/u)"
             });
 
             if (result.isConfirmed) {

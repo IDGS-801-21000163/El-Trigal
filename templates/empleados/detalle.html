@@ -17,9 +17,9 @@
     <!-- ── PERFIL ── -->
     <div class="detail-header">
 
-        {% if empleado.persona and empleado.persona.foto and empleado.persona.foto.startswith('data:image') %}
-    <img src="{{ empleado.persona.foto }}" class="avatar-img">
-{% else %}
+        {% if foto_url %}
+            <img src="{{ foto_url }}" class="avatar-img">
+        {% else %}
     <div class="avatar">
         {{ empleado.persona.nombre[0] if empleado.persona and empleado.persona.nombre else '?' }}
     </div>
@@ -74,10 +74,17 @@
             Volver
         </a>
 
-        <a class="btn btn-primary btn-toggle"
-           data-url ="{{ url_for(endpoint ~ '.eliminar', id=empleado.id) }}">
-            Eliminar
-        </a>
+        {% if empleado.estatus == 'ACTIVO' %}
+            <a class="btn btn-danger-outline btn-toggle"
+               data-url ="{{ url_for(endpoint ~ '.eliminar', id=empleado.id) }}">
+                Eliminar
+            </a>
+        {% else %}
+            <a class="btn btn-outline"
+               href="{{ url_for(endpoint ~ '.activar', id=empleado.id) }}">
+                Activar
+            </a>
+        {% endif %}
 
     </div>
 

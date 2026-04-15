@@ -41,6 +41,11 @@
     <div class="button-row">
         <a href="{{ url_for('proveedores.inicio') }}" class="btn btn-outline">Volver</a>
         <a href="{{ url_for('proveedores.editar', id=proveedor.id) }}" class="btn btn-primary">Editar</a>
+        {% if proveedor.estatus == 'ACTIVO' %}
+            <a href="{{ url_for('proveedores.eliminar', id=proveedor.id) }}" class="btn btn-danger-outline">Eliminar</a>
+        {% else %}
+            <a href="{{ url_for('proveedores.activar', id=proveedor.id) }}" class="btn btn-outline">Activar</a>
+        {% endif %}
     </div>
 </div>
 {% endblock %}

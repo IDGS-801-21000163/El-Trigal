@@ -38,6 +38,17 @@ def generar_password(longitud=8):
 def usuario_sesion_id():
     return session.get("usuario_id") or 1
 
+def _format_persona_foto(foto):
+    """Convierte BLOB -> data URL para render. No usar para persistir en BD."""
+    if not foto:
+        return None
+    if isinstance(foto, (bytes, bytearray)):
+        return f"data:image/jpeg;base64,{base64.b64encode(foto).decode('utf-8')}"
+    if isinstance(foto, str):
+        # Compat si ya hay data urls guardados en datos legacy.
+        return foto if foto.startswith("data:image") else f"data:image/jpeg;base64,{foto}"
+    return None
+
 def validate_fk_estado(self, field):
     if field.data == 0:
         raise ValidationError("Seleccione un estado válido")
@@ -61,13 +72,16 @@ MODULE = {
 @empleados.route("/")
 def inicio():
     buscar = request.args.get("buscar", "", type=str).strip()
+    estatus = request.args.get("estatus", "ACTIVO", type=str).strip().upper()
 
     query = (
         Empleado.query.join(Persona, Empleado.fk_persona == Persona.id)
         .outerjoin(Puesto, Empleado.fk_puesto == Puesto.id)
         .outerjoin(Usuario, Persona.fk_usuario == Usuario.id)
-        .filter(Empleado.estatus == "ACTIVO")
     )
+
+    if estatus in {"ACTIVO", "INACTIVO"}:
+        query = query.filter(Empleado.estatus == estatus)
 
     if buscar:
         like = f"%{buscar}%"
@@ -87,16 +101,15 @@ def inicio():
     empleados_lista = query.all()
 
     for emp in empleados_lista:
-        if emp.persona and emp.persona.foto:
-            if isinstance(emp.persona.foto, bytes):
-                emp.persona.foto = emp.persona.foto.decode('utf-8')
+        # Importante: NO mutar emp.persona.foto (BLOB) para render, eso marca dirty y provoca autoflush.
+        emp.persona_foto_url = _format_persona_foto(emp.persona.foto) if emp.persona else None
 
    
 
     module = MODULE.copy()
     module["items"] = empleados_lista
 
-    return render_template("empleados/inicio.html", module=module, buscar=buscar)
+    return render_template("empleados/inicio.html", module=module, buscar=buscar, estatus=estatus)
 
 
 # ==========================
@@ -105,12 +118,10 @@ def inicio():
 @empleados.route("/detalle/<int:id>")
 def detalle(id):
     empleado = Empleado.query.get_or_404(id)
-    if empleado.persona and empleado.persona.foto:
-        if isinstance(empleado.persona.foto, bytes):
-            empleado.persona.foto = empleado.persona.foto.decode('utf-8')
     return render_template(
         "empleados/detalle.html",
         empleado=empleado,
+        foto_url=_format_persona_foto(empleado.persona.foto) if empleado.persona else None,
         module=MODULE,
         temp_user=session.pop("alert_user", None),
         temp_password=session.pop("alert_password", None)
@@ -154,15 +165,13 @@ def agregar():
     # MUNICIPIOS
     estado_id = request.form.get("fk_estado", type=int)
 
-    form.fk_municipio.choices = []
+    form.fk_municipio.choices = [(0, "Seleccione un municipio")]
 
-    if estado_id:
-        form.fk_municipio.choices = [
+    if estado_id and estado_id > 0:
+        form.fk_municipio.choices += [
             (m.id, m.nombre)
-            for m in Municipio.query
-            .filter_by(fk_estado=estado_id)
-            .order_by(Municipio.nombre)
-    ]
+            for m in Municipio.query.filter_by(fk_estado=estado_id).order_by(Municipio.nombre)
+        ]
 
     # VALIDAR
     if form.validate_on_submit():
@@ -188,6 +197,14 @@ def agregar():
         action_label="Agregar"
     )
         
+        # Validación explícita para selects (evita que el navegador deje un valor por default silencioso).
+        if not form.fk_estado.data or int(form.fk_estado.data) <= 0:
+            flash("Debes seleccionar un estado.", "danger")
+            return render_template("empleados/agregar.html", form=form, module=MODULE, action_label="Agregar")
+        if not form.fk_municipio.data or int(form.fk_municipio.data) <= 0:
+            flash("Debes seleccionar un municipio.", "danger")
+            return render_template("empleados/agregar.html", form=form, module=MODULE, action_label="Agregar")
+
         uid = usuario_sesion_id()
 
         # ROL
@@ -263,7 +280,8 @@ def agregar():
         if archivo and hasattr(archivo, 'read') and archivo.filename:
             contenido = archivo.read()
             if contenido:
-                persona.foto = f"data:{archivo.mimetype};base64,{base64.b64encode(contenido).decode('utf-8')}"
+                # Guardar como BLOB en BD (no data URL).
+                persona.foto = contenido
 
         # EMPLEADO
         empleado = Empleado(
@@ -461,15 +479,13 @@ def editar(id):
         if archivo and hasattr(archivo, 'read') and archivo.filename:
             contenido = archivo.read()
             if contenido:
-                persona.foto = f"data:{archivo.mimetype};base64,{base64.b64encode(contenido).decode('utf-8')}"
+                # Guardar como BLOB en BD (no data URL).
+                persona.foto = contenido
 
         db.session.commit()
 
         flash("Empleado actualizado correctamente.", "success")
         return redirect(url_for("empleados.inicio"))
-    if persona and persona.foto:
-            if isinstance(persona.foto, bytes):
-                persona.foto = persona.foto.decode('utf-8')
     return render_template(
         "empleados/editar.html",
         form=form,
@@ -519,6 +535,27 @@ def eliminar(id):
 
     flash("Empleado dado de baja correctamente.", "warning")
     return redirect(url_for("empleados.inicio"))
+
+
+@empleados.route("/activar/<int:id>")
+def activar(id):
+    empleado = Empleado.query.get_or_404(id)
+    persona = empleado.persona
+    usuario = persona.usuario if persona else None
+
+    uid = usuario_sesion_id()
+    empleado.estatus = "ACTIVO"
+    empleado.usuario_movimiento = uid
+    if persona:
+        persona.estatus = "ACTIVO"
+        persona.usuario_movimiento = uid
+    if usuario:
+        usuario.estatus = "ACTIVO"
+        usuario.usuario_movimiento = uid
+
+    db.session.commit()
+    flash("Empleado reactivado correctamente.", "success")
+    return redirect(url_for("empleados.inicio", estatus="INACTIVO"))
 
 
 # ==========================

@@ -603,9 +603,17 @@ def acceso():
     if form.validate_on_submit():
         usuario = Usuario.query.filter_by(nick=form.usuario.data.strip().lower()).first()
 
+        # Bloqueo por intentos fallidos (A07).
+        if usuario and usuario.bloqueado_hasta and datetime.datetime.now() < usuario.bloqueado_hasta:
+            flash("Tu cuenta está bloqueada temporalmente por intentos fallidos. Intenta más tarde.", "danger")
+            return render_template("index.html", form=form)
+
         if not usuario or usuario.estatus != "ACTIVO" or not verify_password(usuario.clave, form.contrasena.data):
             if usuario:
                 usuario.intentos_fallidos = (usuario.intentos_fallidos or 0) + 1
+                # Al 3er intento fallido bloquear por 15 minutos.
+                if (usuario.intentos_fallidos or 0) >= 3:
+                    usuario.bloqueado_hasta = datetime.datetime.now() + datetime.timedelta(minutes=15)
                 usuario.usuario_movimiento = usuario.id
                 db.session.commit()
 

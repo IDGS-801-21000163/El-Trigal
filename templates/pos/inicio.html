@@ -51,8 +51,8 @@
                             {% if not caja_abierta or pedido %}disabled{% endif %}
                             class="pos-product-card {% if not caja_abierta or pedido %}pos-product-card--disabled{% endif %}">
                             <div class="pos-product-card__media">
-                                {% if p.foto %}
-                                    <img src="data:image/png;base64,{{ p.foto }}" alt="{{ p.nombre }}">
+                                {% if p.foto_url %}
+                                    <img src="{{ p.foto_url }}" alt="{{ p.nombre }}">
                                 {% else %}
                                     <img src="{{ url_for('static', filename='img/default-product.jpeg') }}" alt="{{ p.nombre }}" class="pos-product-card__placeholder">
                                 {% endif %}
@@ -152,8 +152,8 @@
                 </div>
 
                 <div class="pedido-summary">
-                    <div><span>Subtotal</span><strong>${{ subtotal }}</strong></div>
-                    <div class="pedido-summary__total"><span>Total</span><strong>${{ total }}</strong></div>
+                    <div><span>Subtotal</span><strong>${{ '%.2f'|format(subtotal|float) }}</strong></div>
+                    <div class="pedido-summary__total"><span>Total</span><strong>${{ '%.2f'|format(total|float) }}</strong></div>
                 </div>
 
                 <form method="POST" class="pedido-checkout pos-checkout-form">
@@ -180,7 +180,7 @@
 
                     {% if cambio is not none %}
                     <div class="inventory-alert" style="background: rgba(111,143,95,0.12); color:#4f6a42; border-color: rgba(111,143,95,0.2);">
-                        Cambio: ${{ cambio }}
+                        Cambio: ${{ '%.2f'|format(cambio|float) }}
                     </div>
                     {% endif %}
 

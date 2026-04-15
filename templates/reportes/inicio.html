@@ -1,0 +1,91 @@
+{% extends "layout.html" %}
+
+{% block page_title %}
+    {{ module['name'] }}
+{% endblock %}
+
+{% block card_title %}
+    Descargas
+{% endblock %}
+
+{% block content %}
+<section class="page-stack">
+    <article class="card card--flat">
+        <div class="card-header">
+            <span class="card-title">Descargar reporte</span>
+        </div>
+        <div class="card-body">
+            <form class="toolbar toolbar--wrap" method="GET" action="{{ url_for('reportes.exportar') }}" id="reporte-form">
+                <label class="toolbar__field" style="min-width: 280px;">
+                    <span class="toolbar__label">Tipo de reporte</span>
+                    <select class="form-input form-input--compact" name="tipo" id="tipo-reporte" required>
+                        <option value="ventas" {% if filtros.tipo == 'ventas' %}selected{% endif %}>Ventas (detalle)</option>
+                        <option value="top_productos" {% if filtros.tipo == 'top_productos' %}selected{% endif %}>Top productos</option>
+                        <option value="menos_productos" {% if filtros.tipo == 'menos_productos' %}selected{% endif %}>Menos vendidos</option>
+                        <option value="top_clientes" {% if filtros.tipo == 'top_clientes' %}selected{% endif %}>Top clientes</option>
+                    </select>
+                </label>
+
+                <label class="toolbar__field" style="min-width: 220px;">
+                    <span class="toolbar__label">Periodo</span>
+                    <select class="form-input form-input--compact" name="periodo" id="periodo-reporte">
+                        <option value="hoy" {% if filtros.periodo == 'hoy' %}selected{% endif %}>Hoy</option>
+                        <option value="7d" {% if filtros.periodo == '7d' %}selected{% endif %}>Ultimos 7 dias</option>
+                        <option value="30d" {% if filtros.periodo == '30d' %}selected{% endif %}>Ultimos 30 dias</option>
+                        <option value="custom" {% if filtros.periodo == 'custom' %}selected{% endif %}>Personalizado</option>
+                    </select>
+                </label>
+
+                <label class="toolbar__field" id="desde-wrap">
+                    <span class="toolbar__label">Desde</span>
+                    <input class="form-input form-input--compact" type="date" name="desde" id="desde" value="{{ filtros.desde }}">
+                </label>
+                <label class="toolbar__field" id="hasta-wrap">
+                    <span class="toolbar__label">Hasta</span>
+                    <input class="form-input form-input--compact" type="date" name="hasta" id="hasta" value="{{ filtros.hasta }}">
+                </label>
+
+                <button class="btn btn-primary" type="submit">Descargar CSV</button>
+                <a class="btn btn-outline" href="{{ url_for('dashboard.inicio') }}">Volver al dashboard</a>
+
+                <p class="muted" style="flex-basis: 100%; margin: 0;">
+                    Si eliges <strong>Personalizado</strong>, llena <strong>Desde</strong> y <strong>Hasta</strong>.
+                    Si eliges Hoy o Ultimos dias, esos campos se ignoran.
+                </p>
+            </form>
+
+            <div class="muted" style="margin-top: 10px;">
+                Rango actual: <strong>{{ filtros.desde }}</strong> a <strong>{{ filtros.hasta }}</strong>
+            </div>
+        </div>
+    </article>
+</section>
+
+<script>
+    (function () {
+        const periodo = document.getElementById("periodo-reporte");
+        const desde = document.getElementById("desde");
+        const hasta = document.getElementById("hasta");
+        const desdeWrap = document.getElementById("desde-wrap");
+        const hastaWrap = document.getElementById("hasta-wrap");
+
+        function syncCustomVisibility() {
+            const isCustom = periodo && periodo.value === "custom";
+            if (desdeWrap) desdeWrap.style.display = isCustom ? "" : "none";
+            if (hastaWrap) hastaWrap.style.display = isCustom ? "" : "none";
+            if (desde) desde.required = !!isCustom;
+            if (hasta) hasta.required = !!isCustom;
+            if (!isCustom) {
+                // Evita que se manden fechas viejas cuando el usuario no esta en modo personalizado.
+                if (desde) desde.value = "";
+                if (hasta) hasta.value = "";
+            }
+        }
+
+        if (periodo) {
+            periodo.addEventListener("change", syncCustomVisibility);
+        }
+        syncCustomVisibility();
+    })();
+</script>
+{% endblock %}

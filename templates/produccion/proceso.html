@@ -14,7 +14,8 @@
         <div class="dashboard-hero__copy">
             <span class="dashboard-chip">Lote #{{ produccion.id }}</span>
             <h2>{{ producto.nombre }}</h2>
-            <p>Objetivo: {{ detalle.cantidad_solicitada }} piezas. Sigue la receta paso a paso y marca el avance para acompañar al empleado durante la producción.</p>
+            {% set charolas = (detalle.cantidad_solicitada // 10) %}
+            <p>Objetivo: {{ charolas }} charolas ({{ detalle.cantidad_solicitada }} piezas). Sigue la receta paso a paso y marca el avance para acompañar al empleado durante la producción.</p>
             <div class="dashboard-hero__stats">
                 <article>
                     <span>Estado</span>
@@ -171,9 +172,10 @@ const HELP_AI_CONFIGURED = {{ "true" if ai_help_configured else "false" }};
 const HELP_AI_VISUAL = {{ "true" if ai_help_visual else "false" }};
 const HELP_AI_TTS = {{ "true" if ai_help_tts else "false" }};
 const HELP_CSRF_TOKEN = "{{ csrf_token() }}";
-const HELP_TEXT_URL = "{{ url_for('produccion.ayuda_texto', id=produccion.id) }}";
-const HELP_VISION_URL = "{{ url_for('produccion.ayuda_vision_context', id=produccion.id) }}";
-const HELP_TTS_URL = "{{ url_for('produccion.ayuda_tts', id=produccion.id) }}";
+const HELP_DETALLE_ID = {{ detalle.id }};
+const HELP_TEXT_URL = "{{ url_for('produccion.ayuda_texto', id=produccion.id) }}" + `?detalle_id=${HELP_DETALLE_ID}`;
+const HELP_VISION_URL = "{{ url_for('produccion.ayuda_vision_context', id=produccion.id) }}" + `?detalle_id=${HELP_DETALLE_ID}`;
+const HELP_TTS_URL = "{{ url_for('produccion.ayuda_tts', id=produccion.id) }}" + `?detalle_id=${HELP_DETALLE_ID}`;
 
 function openHelpModal() {
     document.getElementById("helpModal").classList.remove("is-hidden");

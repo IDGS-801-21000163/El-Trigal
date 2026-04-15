@@ -12,11 +12,19 @@
         </div>
         <div class="button-row">
             <a href="{{ url_for('recetas.editarReceta') }}?id={{ receta.id }}" class="btn btn-primary">Editar</a>
-            <form method="POST" action="{{ url_for('recetas.eliminarReceta') }}">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <input type="hidden" name="id" value="{{ receta.id }}">
-                <button type="submit" class="btn btn-danger-outline">Eliminar</button>
-            </form>
+            {% if receta.estatus == "ACTIVO" %}
+                <form method="POST" action="{{ url_for('recetas.eliminarReceta') }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <input type="hidden" name="id" value="{{ receta.id }}">
+                    <button type="submit" class="btn btn-danger-outline">Eliminar</button>
+                </form>
+            {% else %}
+                <form method="POST" action="{{ url_for('recetas.activarReceta') }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <input type="hidden" name="id" value="{{ receta.id }}">
+                    <button type="submit" class="btn btn-outline">Activar</button>
+                </form>
+            {% endif %}
             <a href="{{ url_for('recetas.inicio') }}" class="btn btn-outline">Volver</a>
         </div>
     </div>
@@ -38,10 +46,18 @@
             <div class="receta-ingredient-list">
                 {% for d in receta.detalles if d.estatus == "ACTIVO" %}
                 <div class="receta-ingredient-item">
-                    <div class="avatar">I</div>
+                    {% set img = imagenes_detalles.get(d.id) if imagenes_detalles else None %}
+                    {% if img %}
+                        <img class="avatar-img" src="{{ img }}" alt="{{ d.insumo.nombre if d.insumo else 'Insumo' }}">
+                    {% else %}
+                        <div class="avatar">I</div>
+                    {% endif %}
                     <div class="employee-main">
                         <strong class="employee-name">{{ d.insumo.nombre }}</strong>
-                        <p class="employee-role">{{ d.cantidad_insumo }} {{ d.unidad.nombre if d.unidad else '' }}</p>
+                        <p class="employee-role">
+                            {{ ('%.5f'|format(d.cantidad_insumo|float)).rstrip('0').rstrip('.') }}
+                            {{ d.unidad.nombre if d.unidad else '' }}
+                        </p>
                     </div>
                 </div>
                 {% else %}

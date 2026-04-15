@@ -2,6 +2,7 @@ import base64
 
 from flask import render_template, redirect, url_for, flash, request, jsonify, session
 from sqlalchemy import or_
+from sqlalchemy.exc import IntegrityError
 from . import proveedores
 from models import Compra, db, Direccion, Estado, Municipio, Proveedor
 from forms import ProveedorForm
@@ -22,8 +23,11 @@ def usuario_sesion_id():
 @proveedores.route("/")
 def inicio():
     buscar = request.args.get("buscar", "", type=str).strip()
+    estatus = request.args.get("estatus", "ACTIVO", type=str).strip().upper()
 
-    query = Proveedor.query.filter_by(estatus="ACTIVO")
+    query = Proveedor.query
+    if estatus in {"ACTIVO", "INACTIVO"}:
+        query = query.filter_by(estatus=estatus)
     if buscar:
         like = f"%{buscar}%"
         query = query.filter(
@@ -38,7 +42,7 @@ def inicio():
     proveedores_lista = query.all()
     module = MODULE.copy()
     module["items"] = proveedores_lista
-    return render_template("proveedores/inicio.html", module=module, buscar=buscar)
+    return render_template("proveedores/inicio.html", module=module, buscar=buscar, estatus=estatus)
 
 
 # ==========================
@@ -62,20 +66,48 @@ def agregar():
     form = ProveedorForm()
 
     form.fk_estado.choices = [(0, "Seleccione un estado")] + [
-        (e.id, e.nombre) for e in Estado.query.order_by(Estado.nombre)
+        (e.id, e.nombre) for e in Estado.query.filter_by(estatus="ACTIVO").order_by(Estado.nombre)
     ]
 
     if request.method == "POST":
-        form.fk_municipio.choices = [
+        estado_id = request.form.get("fk_estado", type=int) or 0
+        form.fk_municipio.choices = [(0, "Seleccione un municipio")]
+        if estado_id > 0:
+            form.fk_municipio.choices += [
             (m.id, m.nombre)
             for m in Municipio.query
-            .filter_by(fk_estado=request.form.get("fk_estado", type=int))
+            .filter_by(fk_estado=estado_id)
             .order_by(Municipio.nombre)
         ]
     else:
-        form.fk_municipio.choices = []
+        form.fk_municipio.choices = [(0, "Seleccione un municipio")]
 
     if form.validate_on_submit():
+        # Obligatorios (evita que pase vacío y luego truene por constraints/UX).
+        if not (form.telefono.data or "").strip():
+            flash("El teléfono es obligatorio.", "danger")
+            return render_template("proveedores/agregar.html", form=form, module=MODULE, action_label="Agregar")
+        if not (form.correo.data or "").strip():
+            flash("El correo es obligatorio.", "danger")
+            return render_template("proveedores/agregar.html", form=form, module=MODULE, action_label="Agregar")
+
+        # Selects con placeholder 0.
+        if not form.fk_estado.data or int(form.fk_estado.data) <= 0:
+            flash("Debes seleccionar un estado.", "danger")
+            return render_template("proveedores/agregar.html", form=form, module=MODULE, action_label="Agregar")
+        if not form.fk_municipio.data or int(form.fk_municipio.data) <= 0:
+            flash("Debes seleccionar un municipio.", "danger")
+            return render_template("proveedores/agregar.html", form=form, module=MODULE, action_label="Agregar")
+
+        # Duplicados.
+        tel = (form.telefono.data or "").strip()
+        mail = (form.correo.data or "").strip().lower()
+        if tel and Proveedor.query.filter_by(telefono=tel).first():
+            flash("El teléfono ya está registrado.", "danger")
+            return render_template("proveedores/agregar.html", form=form, module=MODULE, action_label="Agregar")
+        if mail and Proveedor.query.filter_by(correo=mail).first():
+            flash("El correo ya está registrado.", "danger")
+            return render_template("proveedores/agregar.html", form=form, module=MODULE, action_label="Agregar")
 
         uid = usuario_sesion_id()
 
@@ -96,15 +128,20 @@ def agregar():
         proveedor = Proveedor(
             nombre_comercial=form.nombre_comercial.data,
             razon_social=form.razon_social.data,
-            telefono=form.telefono.data,
-            correo=form.correo.data,
+            telefono=tel,
+            correo=mail,
             fk_direccion=direccion.id,
             estatus=form.estatus.data or "ACTIVO",
             usuario_creacion=uid,
             usuario_movimiento=uid
         )
         db.session.add(proveedor)
-        db.session.commit()
+        try:
+            db.session.commit()
+        except IntegrityError:
+            db.session.rollback()
+            flash("No se pudo guardar: teléfono o correo duplicado.", "danger")
+            return render_template("proveedores/agregar.html", form=form, module=MODULE, action_label="Agregar")
 
         flash("Proveedor agregado correctamente.", "success")
         return redirect(url_for("proveedores.inicio"))
@@ -123,8 +160,8 @@ def editar(id):
     direccion = proveedor.direccion
     form = ProveedorForm()
 
-    form.fk_estado.choices = [
-        (e.id, e.nombre) for e in Estado.query.order_by(Estado.nombre)
+    form.fk_estado.choices = [(0, "Seleccione un estado")] + [
+        (e.id, e.nombre) for e in Estado.query.filter_by(estatus="ACTIVO").order_by(Estado.nombre)
     ]
 
     if request.method == "POST":
@@ -133,6 +170,8 @@ def editar(id):
         estado_id = direccion.fk_estado
 
     form.fk_municipio.choices = [
+        (0, "Seleccione un municipio")
+    ] + [
         (m.id, m.nombre)
         for m in Municipio.query.filter_by(fk_estado=estado_id).order_by(Municipio.nombre)
     ]
@@ -156,13 +195,38 @@ def editar(id):
         form.fk_municipio.data   = direccion.fk_municipio
 
     if form.validate_on_submit():
+        if not (form.telefono.data or "").strip():
+            flash("El teléfono es obligatorio.", "danger")
+            return redirect(request.url)
+        if not (form.correo.data or "").strip():
+            flash("El correo es obligatorio.", "danger")
+            return redirect(request.url)
+        if not form.fk_estado.data or int(form.fk_estado.data) <= 0:
+            flash("Debes seleccionar un estado.", "danger")
+            return redirect(request.url)
+        if not form.fk_municipio.data or int(form.fk_municipio.data) <= 0:
+            flash("Debes seleccionar un municipio.", "danger")
+            return redirect(request.url)
 
         uid = usuario_sesion_id()
 
+        tel = (form.telefono.data or "").strip()
+        mail = (form.correo.data or "").strip().lower()
+
+        existe_tel = Proveedor.query.filter(Proveedor.telefono == tel, Proveedor.id != proveedor.id).first()
+        if tel and existe_tel:
+            flash("El teléfono ya está registrado.", "danger")
+            return redirect(request.url)
+
+        existe_mail = Proveedor.query.filter(Proveedor.correo == mail, Proveedor.id != proveedor.id).first()
+        if mail and existe_mail:
+            flash("El correo ya está registrado.", "danger")
+            return redirect(request.url)
+
         proveedor.nombre_comercial     = form.nombre_comercial.data
         proveedor.razon_social         = form.razon_social.data
-        proveedor.telefono             = form.telefono.data
-        proveedor.correo               = form.correo.data
+        proveedor.telefono             = tel
+        proveedor.correo               = mail
         proveedor.estatus              = form.estatus.data
         proveedor.usuario_movimiento   = uid
 
@@ -175,7 +239,12 @@ def editar(id):
         direccion.fk_municipio       = form.fk_municipio.data
         direccion.usuario_movimiento = uid
 
-        db.session.commit()
+        try:
+            db.session.commit()
+        except IntegrityError:
+            db.session.rollback()
+            flash("No se pudo guardar: teléfono o correo duplicado.", "danger")
+            return redirect(request.url)
         flash("Proveedor actualizado correctamente.", "success")
         return redirect(url_for("proveedores.inicio"))
 
@@ -207,6 +276,22 @@ def eliminar(id):
 
     flash("Proveedor eliminado correctamente.", "warning")
     return redirect(url_for("proveedores.inicio"))
+
+
+@proveedores.route("/activar/<int:id>")
+def activar(id):
+    proveedor = Proveedor.query.get_or_404(id)
+    uid = usuario_sesion_id()
+
+    proveedor.estatus = "ACTIVO"
+    proveedor.usuario_movimiento = uid
+    if proveedor.direccion:
+        proveedor.direccion.estatus = "ACTIVO"
+        proveedor.direccion.usuario_movimiento = uid
+
+    db.session.commit()
+    flash("Proveedor reactivado correctamente.", "success")
+    return redirect(url_for("proveedores.inicio", estatus="INACTIVO"))
 
 
 # ==========================

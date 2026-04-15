@@ -15,6 +15,7 @@ from models import (
     PedidoAnticipo,
     PedidoDetalle,
     Producto,
+    SolicitudProduccion,
     db,
 )
 from utils.auth import send_email
@@ -70,12 +71,16 @@ def _get_product_stock(producto_id, sucursal_id=None):
     if not sucursal_id:
         return 0.0
 
+    now = datetime.datetime.now()
     stock = (
         db.session.query(func.coalesce(func.sum(InventarioProducto.cantidad_producto), 0))
         .filter(
             InventarioProducto.fk_producto == producto_id,
             InventarioProducto.fk_sucursal == sucursal_id,
             InventarioProducto.estatus == "ACTIVO",
+            InventarioProducto.es_merma == 0,
+            InventarioProducto.cantidad_producto > 0,
+            InventarioProducto.fecha_caducidad >= now,
         )
         .scalar()
     )
@@ -123,20 +128,29 @@ def _build_cart_detail():
         if not producto:
             continue
 
-        cantidad = int(item["cantidad"])
+        # Carrito en charolas (1 charola = 10 piezas). Compat: si llega "cantidad" en piezas, convertir.
+        charolas = int(item.get("charolas") or 0)
+        if not charolas and item.get("cantidad"):
+            try:
+                charolas = max(1, int(int(item["cantidad"]) / 10))
+            except Exception:
+                charolas = 0
+        piezas = charolas * 10
         unit_price = Decimal(str(producto.precio or 0))
-        line_total = unit_price * Decimal(str(cantidad))
+        line_total = unit_price * Decimal(str(piezas))
         subtotal += line_total
-        total_items += cantidad
+        total_items += piezas
 
         detail.append(
             {
                 "producto_id": producto.id,
                 "nombre": producto.nombre,
-                "cantidad": cantidad,
+                "charolas": charolas,
+                "cantidad": piezas,
                 "precio": float(unit_price),
                 "subtotal": float(line_total),
                 "imagen": _format_image(producto.foto),
+                # Pedidos no consumen stock; solo informativo (vigentes).
                 "stock": _get_product_stock(producto.id),
             }
         )
@@ -345,31 +359,19 @@ def inicio():
 @pedidos.route("/carrito/agregar", methods=["POST"])
 def agregar_al_carrito():
     producto_id = request.form.get("producto_id", type=int)
-    cantidad = max(request.form.get("cantidad", type=int, default=1), 1)
+    charolas = max(request.form.get("cantidad", type=int, default=1), 1)
     producto = Producto.query.filter_by(id=producto_id, estatus="ACTIVO").first()
 
     if not producto:
         flash("El producto seleccionado ya no esta disponible.", "warning")
         return redirect(url_for("pedidos.inicio"))
 
-    stock_disponible = _get_product_stock(producto_id)
-    if stock_disponible <= 0:
-        flash(f"{producto.nombre} no tiene existencias disponibles.", "warning")
-        return redirect(url_for("pedidos.inicio"))
-
     cart = _get_cart()
     existing = next((item for item in cart if item["producto_id"] == producto_id), None)
     if existing:
-        nueva_cantidad = existing["cantidad"] + cantidad
-        if nueva_cantidad > stock_disponible:
-            flash(f"No puedes agregar más de {int(stock_disponible)} unidad(es) de {producto.nombre}.", "warning")
-            return redirect(url_for("pedidos.inicio"))
-        existing["cantidad"] = nueva_cantidad
+        existing["charolas"] = int(existing.get("charolas") or 0) + charolas
     else:
-        if cantidad > stock_disponible:
-            flash(f"Solo hay {int(stock_disponible)} unidad(es) disponibles de {producto.nombre}.", "warning")
-            return redirect(url_for("pedidos.inicio"))
-        cart.append({"producto_id": producto_id, "cantidad": cantidad})
+        cart.append({"producto_id": producto_id, "charolas": charolas})
 
     _save_cart(cart)
     flash(f"{producto.nombre} se agrego al carrito.", "success")
@@ -379,25 +381,17 @@ def agregar_al_carrito():
 @pedidos.route("/carrito/actualizar", methods=["POST"])
 def actualizar_carrito():
     producto_id = request.form.get("producto_id", type=int)
-    cantidad = request.form.get("cantidad", type=int, default=1)
+    charolas = request.form.get("cantidad", type=int, default=1)
     cart = _get_cart()
     producto = Producto.query.filter_by(id=producto_id, estatus="ACTIVO").first()
-    stock_disponible = _get_product_stock(producto_id)
 
     for item in cart:
         if item["producto_id"] == producto_id:
-            if cantidad <= 0:
+            if not charolas or charolas <= 0:
                 cart = [row for row in cart if row["producto_id"] != producto_id]
                 flash("Producto eliminado del carrito.", "warning")
             else:
-                if cantidad > stock_disponible:
-                    flash(
-                        f"Solo hay {int(stock_disponible)} unidad(es) disponibles"
-                        + (f" de {producto.nombre}" if producto else "."),
-                        "warning",
-                    )
-                    return redirect(url_for("pedidos.inicio"))
-                item["cantidad"] = cantidad
+                item["charolas"] = int(charolas)
                 flash("Cantidad actualizada.", "success")
             break
 
@@ -448,20 +442,13 @@ def checkout():
     user_id = get_current_user_id()
 
     try:
-        inventarios = {}
+        # Pedidos (cliente / en línea): no descuentan inventario.
+        # Se genera una solicitud de producción por charolas (múltiplos de 10 piezas).
+        now = datetime.datetime.now()
         for item in cart_items:
-            inventario = InventarioProducto.query.filter_by(
-                fk_producto=item["producto_id"],
-                fk_sucursal=sucursal_id,
-                estatus="ACTIVO",
-            ).first()
-
-            if not inventario or float(inventario.cantidad_producto or 0) < item["cantidad"]:
-                producto_nombre = item["nombre"]
-                flash(f"No hay existencias suficientes para {producto_nombre}.", "warning")
+            if int(item["cantidad"] or 0) % 10 != 0:
+                flash("Los pedidos solo se pueden hacer por charolas (múltiplos de 10).", "warning")
                 return redirect(url_for("pedidos.inicio"))
-
-            inventarios[item["producto_id"]] = inventario
 
         pedido = Pedido(
             fk_cliente=cliente.id,
@@ -470,7 +457,7 @@ def checkout():
             tipo_pedido="EN_LINEA",
             notas=notas,
             fecha_entrega=fecha_entrega,
-            estado="ESPERANDO",
+            estado="EN PRODUCCION",
             estatus="ACTIVO",
             usuario_creacion=user_id,
             usuario_movimiento=user_id,
@@ -501,25 +488,19 @@ def checkout():
                 usuario_creacion=user_id,
                 usuario_movimiento=user_id,
             )
-        )
+            )
 
         for item in cart_items:
-            inventario = inventarios[item["producto_id"]]
-            cantidad_anterior = Decimal(str(inventario.cantidad_producto or 0))
-            cantidad_nueva = cantidad_anterior - Decimal(str(item["cantidad"]))
-
-            inventario.cantidad_producto = cantidad_nueva
-            inventario.estado = "EXISTENCIA" if cantidad_nueva > 0 else "AGOTADO"
-            inventario.usuario_movimiento = user_id
-
+            piezas = int(item["cantidad"] or 0)
+            # Cada pedido genera su propia solicitud (no agrupar por producto).
             db.session.add(
-                InventarioProductoMovimiento(
-                    fk_inventario_producto=inventario.id,
-                    tipo_movimiento="AUDITORIA",
-                    cantidad_anterior=cantidad_anterior,
-                    cantidad_nueva=cantidad_nueva,
-                    diferencia=Decimal(str(item["cantidad"])) * Decimal("-1"),
-                    motivo=f"Salida por pedido en linea #{pedido.id}",
+                SolicitudProduccion(
+                    fk_producto=item["producto_id"],
+                    fk_empleado=empleado_id,
+                    cantidad_solicitada=piezas,
+                    estado="PENDIENTE",
+                    observaciones=f"Pedido en linea #{pedido.id}",
+                    usuario_creacion=user_id,
                     usuario_movimiento=user_id,
                 )
             )

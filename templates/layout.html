@@ -28,10 +28,10 @@
                     </div>
                 </a>
                 {% set groups = [
-                    {"title": "General", "slugs": ["dashboard-reportes", "usuarios", "puestos", "empleados", "proveedores", "sucursales", "clientes"]},
+                    {"title": "General", "slugs": ["dashboard", "reportes", "usuarios", "puestos", "empleados", "proveedores", "sucursales", "clientes"]},
                     {"title": "Insumos", "slugs": ["categorias-insumos", "insumos", "compras", "inventario-insumos"]},
                     {"title": "Productos", "slugs": ["categorias-productos", "recetas", "productos", "inventario-productos", "costo-producto"]},
-                    {"title": "Operación", "slugs": ["produccion", "solicitud-produccion", "pedidos", "ventas", "pos"]}
+                    {"title": "Operación", "slugs": ["produccion", "solicitud-produccion", "pedidos", "pedidos-presencial", "ventas", "pos"]}
                 ] %}
                 <nav class="app-sidebar__nav">
                     {% for group in groups %}

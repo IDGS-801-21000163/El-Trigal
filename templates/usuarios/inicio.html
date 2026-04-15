@@ -35,8 +35,8 @@
         <div class="employee-header">
 {% set persona = item.persona if item.persona and not item.persona is iterable else (item.persona[0] if item.persona else none) %}
 
-{% if persona and persona.foto %}
-    <img src="{{ persona.foto }}" class="avatar-img">
+{% if persona and (persona.foto_url or persona.foto) %}
+    <img src="{{ persona.foto_url or persona.foto }}" class="avatar-img">
 {% else %}
     <div class="avatar">
         {{ item.nick[0] }}

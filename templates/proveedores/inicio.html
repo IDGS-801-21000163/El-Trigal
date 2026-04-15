@@ -20,6 +20,11 @@
             name="buscar"
             value="{{ buscar or '' }}"
             placeholder="Buscar proveedor...">
+        <select class="form-input form-input--compact" name="estatus" style="max-width:220px;">
+            <option value="ACTIVO" {% if (estatus or 'ACTIVO') == 'ACTIVO' %}selected{% endif %}>Activos</option>
+            <option value="INACTIVO" {% if estatus == 'INACTIVO' %}selected{% endif %}>Inactivos</option>
+            <option value="TODOS" {% if estatus == 'TODOS' %}selected{% endif %}>Todos</option>
+        </select>
         <button class="btn btn-outline" type="submit">Buscar</button>
     </form>
 
@@ -66,16 +71,28 @@
         <!-- FOOTER -->
         <div class="employee-actions">
 
+            <a href="{{ url_for(endpoint ~ '.detalle', id=proveedor.id) }}"
+               class="btn btn-outline">
+                Ver
+            </a>
+
             <a href="{{ url_for(endpoint ~ '.editar', id=proveedor.id) }}"
                class="btn btn-primary">
                 Editar
             </a>
 
-            <a href="#"
-               class="btn btn-danger-outline btn-toggle"
-               data-url="{{ url_for(endpoint ~ '.eliminar', id=proveedor.id) }}">
-               Eliminar
-            </a>
+            {% if proveedor.estatus == 'ACTIVO' %}
+                <button type="button"
+                   class="btn btn-danger-outline btn-full-row btn-toggle"
+                   data-url="{{ url_for(endpoint ~ '.eliminar', id=proveedor.id) }}">
+                   Eliminar
+                </button>
+            {% else %}
+                <a href="{{ url_for(endpoint ~ '.activar', id=proveedor.id) }}"
+                   class="btn btn-outline btn-full-row">
+                   Activar
+                </a>
+            {% endif %}
 
         </div>
 
@@ -108,6 +125,7 @@ document.querySelectorAll(".btn-toggle").forEach(btn => {
             text: "Esta acción cambiará el estado del proveedor.",
             confirmText: "Sí",
             cancelText: "Cancelar"
+            ,variant: "danger"
         }).then((result) => {
             if (result.isConfirmed) {
                 window.location.href = url

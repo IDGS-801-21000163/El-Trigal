@@ -11,6 +11,11 @@
             name="buscar"
             value="{{ buscar or '' }}"
             placeholder="Buscar producto...">
+        <select name="lote" class="form-input form-input--compact">
+            <option value="vigente" {% if lote == 'vigente' %}selected{% endif %}>Vigentes</option>
+            <option value="caducado" {% if lote == 'caducado' %}selected{% endif %}>Caducados</option>
+            <option value="todos" {% if lote == 'todos' %}selected{% endif %}>Todos</option>
+        </select>
         <button class="btn btn-outline" type="submit">Buscar</button>
     </form>
 </div>
@@ -24,6 +29,10 @@
     {% endif %}
 
 <form id="deleteInventarioForm" method="POST" style="display:none;">
+    {{ form.hidden_tag() }}
+</form>
+
+<form id="mermaInventarioForm" method="POST" style="display:none;">
     {{ form.hidden_tag() }}
 </form>
 
@@ -52,7 +61,15 @@
 
         <div class="employee-actions employee-actions--stack-mobile">
             <a href="{{ url_for('inventario_productos.editar', id=inv.id) }}" class="btn btn-primary">Editar</a>
-            {% if inv.cantidad > 0 %}
+            {% if 'Caducado' in inv.estado_display %}
+            <button
+                type="button"
+                class="btn btn-danger-outline btn-full-row js-merma-inventory"
+                data-url="{{ url_for('inventario_productos.marcar_merma', id=inv.id) }}"
+                data-name="{{ inv.producto_nombre }}">
+                Pasar a merma
+            </button>
+            {% elif inv.cantidad > 0 %}
             <button type="button" class="btn btn-outline btn-full-row" disabled>No permitido</button>
             {% else %}
             <button
@@ -73,6 +90,7 @@
 <script>
 document.addEventListener("DOMContentLoaded", () => {
     const form = document.getElementById("deleteInventarioForm");
+    const mermaForm = document.getElementById("mermaInventarioForm");
 
     document.querySelectorAll(".js-delete-inventory").forEach((button) => {
         button.addEventListener("click", async () => {
@@ -85,6 +103,21 @@ document.addEventListener("DOMContentLoaded", () => {
             if (result.isConfirmed) {
                 form.action = button.dataset.url;
                 form.submit();
+            }
+        });
+    });
+
+    document.querySelectorAll(".js-merma-inventory").forEach((button) => {
+        button.addEventListener("click", async () => {
+            const result = await window.showConfirmDialog({
+                title: "Pasar a merma",
+                text: `Se marcará como merma el lote de "${button.dataset.name}". Ya no contará como stock disponible.`,
+                confirmText: "Sí, pasar a merma"
+            });
+
+            if (result.isConfirmed) {
+                mermaForm.action = button.dataset.url;
+                mermaForm.submit();
             }
         });
     });

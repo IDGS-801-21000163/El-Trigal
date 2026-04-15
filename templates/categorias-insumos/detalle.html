@@ -43,7 +43,6 @@
                 <thead>
                     <tr>
                         <th>Insumo</th>
-                        <th>Merma</th>
                         <th>Estatus</th>
                     </tr>
                 </thead>
@@ -51,12 +50,11 @@
                     {% for insumo in insumos %}
                     <tr>
                         <td>{{ insumo.nombre }}</td>
-                        <td>{{ '%.2f'|format(insumo.porcentaje_merma or 0) }}%</td>
                         <td>{{ insumo.estatus }}</td>
                     </tr>
                     {% else %}
                     <tr>
-                        <td colspan="3">No hay insumos asociados.</td>
+                        <td colspan="2">No hay insumos asociados.</td>
                     </tr>
                     {% endfor %}
                 </tbody>

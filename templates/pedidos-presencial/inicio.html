@@ -1,0 +1,78 @@
+{% extends "layout.html" %}
+
+{% block page_title %}
+    {{ module['name'] }}
+{% endblock %}
+
+{% block card_title %}
+    Pedidos presenciales
+{% endblock %}
+
+{% block content %}
+<section class="page-stack">
+    <div class="toolbar toolbar--wrap">
+        <form class="toolbar toolbar--wrap" method="get" style="flex: 1; gap: 12px;">
+            <label class="toolbar__field" style="min-width: 320px; flex: 1;">
+                <span class="toolbar__label">Buscar</span>
+                <input class="form-input form-input--compact" type="text" name="buscar" value="{{ buscar }}" placeholder="Pedido #123 o nombre del cliente">
+            </label>
+            <label class="toolbar__field" style="min-width: 220px;">
+                <span class="toolbar__label">Estado</span>
+                <select class="form-input form-input--compact" name="estado">
+                    <option value="0" {% if estado == '0' %}selected{% endif %}>Todos</option>
+                    <option value="ESPERANDO" {% if estado == 'ESPERANDO' %}selected{% endif %}>Esperando</option>
+                    <option value="EN PRODUCCION" {% if estado == 'EN PRODUCCION' %}selected{% endif %}>En producción</option>
+                    <option value="LISTO" {% if estado == 'LISTO' %}selected{% endif %}>Listo</option>
+                    <option value="CANCELADO" {% if estado == 'CANCELADO' %}selected{% endif %}>Cancelado</option>
+                </select>
+            </label>
+            <button class="btn btn-outline" type="submit">Filtrar</button>
+            {% if buscar or (estado and estado != '0') %}
+                <a class="btn btn-outline" href="{{ url_for('pedidos_presencial.inicio') }}">Limpiar</a>
+            {% endif %}
+        </form>
+        <a class="btn btn-primary" href="{{ url_for('pedidos_presencial.agregar') }}">Nuevo pedido</a>
+    </div>
+
+    <div class="grid grid--2">
+        {% for pedido in pedidos %}
+            <article class="card card--flat">
+                <div class="card-header">
+                    <span class="card-title">Pedido #{{ pedido.id }}</span>
+                </div>
+                <div class="card-body">
+                    <div class="muted">
+                        Cliente:
+                        <strong>
+                            {{ pedido.cliente.persona.nombre if pedido.cliente and pedido.cliente.persona else 'N/A' }}
+                            {{ pedido.cliente.persona.apellido_uno if pedido.cliente and pedido.cliente.persona else '' }}
+                        </strong>
+                    </div>
+                    <div class="muted">
+                        Entrega:
+                        <strong>
+                            {{ pedido.fecha_entrega.strftime('%Y-%m-%d') if pedido.fecha_entrega else 'N/A' }}
+                        </strong>
+                    </div>
+                    <div class="muted">
+                        Estado:
+                        <strong>{{ pedido.estado }}</strong>
+                    </div>
+
+                    <div style="margin-top: 12px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                        <a class="btn btn-outline" href="{{ url_for('pedidos_presencial.detalle', pedido_id=pedido.id) }}">Ver detalle</a>
+                        <a class="btn btn-primary" href="{{ url_for('pedidos_presencial.detalle', pedido_id=pedido.id) }}">Abrir</a>
+                    </div>
+                </div>
+            </article>
+        {% else %}
+            <article class="card card--flat" style="grid-column: 1 / -1;">
+                <div class="card-body">
+                    <strong>No hay pedidos presenciales para mostrar.</strong>
+                    <div class="muted">Crea uno con "Nuevo pedido".</div>
+                </div>
+            </article>
+        {% endfor %}
+    </div>
+</section>
+{% endblock %}

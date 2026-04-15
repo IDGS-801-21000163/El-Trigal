@@ -34,7 +34,7 @@
             <div class="employee-main">
                 <h2 class="employee-name">{{ item.producto }}</h2>
                 <p class="employee-role">
-                    {{ item.cantidad }} piezas · {{ 'Solicitud de ventas' if item.origen != 'INTERNO' else 'Producción interna' }}
+                    {{ item.charolas }} charolas ({{ item.cantidad }} piezas) · {{ 'Solicitud de ventas' if item.origen != 'INTERNO' else 'Producción interna' }}
                 </p>
             </div>
         </div>
@@ -50,13 +50,12 @@
             {% if item.tipo == 'SOLICITUD' and item.estado == 'PENDIENTE' %}
             <a href="{{ url_for('produccion.crear', solicitud_id=item.id) }}" class="btn btn-outline">Crear orden</a>
             {% elif item.estado == 'PENDIENTE' %}
-            <a href="{{ url_for('produccion.iniciar', id=item.id) }}" class="btn btn-primary">Comenzar guía</a>
+            <a href="{{ url_for('produccion.lote', id=item.id) }}" class="btn btn-primary">Abrir lote</a>
             <a href="{{ url_for('produccion.cancelar', id=item.id) }}" class="btn btn-outline">Cancelar</a>
             {% elif item.estado == 'EN PROCESO' %}
-            <a href="{{ url_for('produccion.proceso', id=item.id) }}" class="btn btn-primary">Continuar</a>
-            <a href="{{ url_for('produccion.terminar', id=item.id) }}" class="btn btn-outline">Cerrar lote</a>
+            <a href="{{ url_for('produccion.lote', id=item.id) }}" class="btn btn-primary">Abrir lote</a>
             {% elif item.estado == 'TERMINADO' %}
-            <a href="{{ url_for('produccion.terminar', id=item.id) }}" class="btn btn-outline">Ver cierre</a>
+            <a href="{{ url_for('produccion.lote', id=item.id) }}" class="btn btn-outline">Ver lote</a>
             {% else %}
             <a href="{{ url_for('produccion.merma', id=item.id) }}" class="btn btn-outline">Registrar merma</a>
             {% endif %}

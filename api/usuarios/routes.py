@@ -4,6 +4,7 @@ from . import usuarios
 from models import Usuario, Rol, Empleado, Persona, db
 from werkzeug.security import generate_password_hash
 import secrets
+import base64
 
 MODULE = {
     "name": "Usuarios",
@@ -29,6 +30,17 @@ def inicio():
         )
 
     usuarios_lista = query.all()
+    # No mutar el BLOB en el modelo; solo generar un atributo para render.
+    for user in usuarios_lista:
+        persona = getattr(user, "persona", None)
+        if not persona or not getattr(persona, "foto", None):
+            continue
+        raw = persona.foto
+        if isinstance(raw, (bytes, bytearray)):
+            persona.foto_url = f"data:image/jpeg;base64,{base64.b64encode(raw).decode('utf-8')}"
+        elif isinstance(raw, str):
+            # Soporta legacy (si ya estaba guardado como data URL).
+            persona.foto_url = raw
     module = MODULE.copy()
     module["items"] = usuarios_lista
     actions = []

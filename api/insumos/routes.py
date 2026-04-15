@@ -1,4 +1,5 @@
 import base64
+from decimal import Decimal
 
 from flask import flash, redirect, render_template, request, session, url_for
 from sqlalchemy import func
@@ -40,13 +41,18 @@ def imagen_insumo(insumo):
     return None
 
 
-def _read_image_base64(file_storage):
+def _read_image_bytes(file_storage):
     if not file_storage:
         return None
+    # WTForms/Werkzeug may leave the stream cursor at the end depending on previous access.
+    try:
+        file_storage.stream.seek(0)
+    except Exception:
+        pass
     raw = file_storage.read()
     if not raw:
         return None
-    return base64.b64encode(raw).decode("utf-8")
+    return raw
 
 
 def resumen_existencia(insumo_id):
@@ -73,6 +79,30 @@ def resumen_existencia(insumo_id):
         "proxima_caducidad": proximidad[0] if proximidad else None,
         "registros": inventarios,
     }
+
+
+def _format_cantidad(cantidad, unidad_nombre: str | None):
+    try:
+        qty = Decimal(str(cantidad or 0))
+    except Exception:
+        qty = Decimal("0")
+    name = (unidad_nombre or "").strip().lower()
+    if name == "gramo" and qty >= Decimal("1000"):
+        try:
+            return float((qty / Decimal("1000")).quantize(Decimal("0.00001"))), "Kilogramo"
+        except Exception:
+            return float(qty / Decimal("1000")), "Kilogramo"
+    if name == "mililitro" and qty >= Decimal("1000"):
+        try:
+            return float((qty / Decimal("1000")).quantize(Decimal("0.00001"))), "Litro"
+        except Exception:
+            return float(qty / Decimal("1000")), "Litro"
+    if unidad_nombre:
+        try:
+            return float(qty.quantize(Decimal("0.00001"))), unidad_nombre
+        except Exception:
+            return float(qty), unidad_nombre
+    return float(qty), ""
 
 
 @insumos.route("/")
@@ -130,6 +160,12 @@ def inicio():
 def detalle(id):
     insumo_item = Insumo.query.get_or_404(id)
     existencia = resumen_existencia(insumo_item.id)
+    # Decorar registros para mostrar conversiones amigables.
+    for inv in existencia["registros"]:
+        unidad_nombre = inv.unidad.nombre if getattr(inv, "unidad", None) else None
+        qty, unidad_show = _format_cantidad(inv.cantidad, unidad_nombre)
+        inv.cantidad_display = qty
+        inv.unidad_display = unidad_show
     metricas = {
         "compras": CompraDetalle.query.filter_by(fk_insumo=id).count(),
         "recetas": RecetaDetalle.query.filter_by(fk_insumo=id).count(),
@@ -165,11 +201,10 @@ def agregar():
             )
 
         uid = usuario_sesion_id()
-        foto = _read_image_base64(form.foto.data)
+        foto = _read_image_bytes(form.foto.data)
         nuevo_insumo = Insumo(
             fk_categoria=form.fk_categoria.data,
             nombre=form.nombre.data.strip(),
-            porcentaje_merma=form.porcentaje_merma.data,
             foto=foto,
             estatus=form.estatus.data,
             usuario_creacion=uid,
@@ -197,16 +232,16 @@ def editar(id):
 
     if request.method == "GET":
         form.fk_categoria.data = insumo_item.fk_categoria
-        form.porcentaje_merma.data = insumo_item.porcentaje_merma
 
     if form.validate_on_submit():
         insumo_item.fk_categoria = form.fk_categoria.data
         insumo_item.nombre = form.nombre.data.strip()
-        insumo_item.porcentaje_merma = form.porcentaje_merma.data
         insumo_item.estatus = form.estatus.data
         insumo_item.usuario_movimiento = usuario_sesion_id()
-        if form.foto.data:
-            insumo_item.foto = _read_image_base64(form.foto.data)
+        if form.foto.data and getattr(form.foto.data, "filename", ""):
+            nueva_foto = _read_image_bytes(form.foto.data)
+            if nueva_foto:
+                insumo_item.foto = nueva_foto
         db.session.commit()
         flash("Insumo actualizado correctamente.", "success")
         return redirect(url_for("insumos.inicio"))

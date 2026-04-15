@@ -23,6 +23,7 @@
 
     <!-- FORM -->
     <form method="POST" action="{{ url_for(endpoint ~ '.editar', id=usuario.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
         <div class="form-group">
             <span>Tipo de usuario</span>

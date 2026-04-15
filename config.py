@@ -58,5 +58,5 @@ class Config(object):
 
 class DevelopmentConfig(Config):
     DEBUG = True
-    SQLALCHEMY_DATABASE_URI = 'mysql+pymysql://panaderia_app:ElTristeTigreDelTrigal!@127.0.0.1/panaderia'
+    SQLALCHEMY_DATABASE_URI = 'mysql+pymysql://root@127.0.0.1/panaderia'
     SQLALCHEMY_TRACK_MODIFICATIONS = False

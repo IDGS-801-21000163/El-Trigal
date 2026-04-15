@@ -24,8 +24,11 @@ def get_user_id():
 @categorias_productos.route('/inicio', methods=['GET'])
 def inicio():
     buscar = request.args.get('buscar', '', type=str)
+    estatus = request.args.get("estatus", "ACTIVO", type=str).strip().upper()
     
-    query = CategoriaProducto.query.filter_by(estatus='ACTIVO')
+    query = CategoriaProducto.query
+    if estatus in {"ACTIVO", "INACTIVO"}:
+        query = query.filter_by(estatus=estatus)
     
     # Filtrar por búsqueda
     if buscar:
@@ -45,7 +48,8 @@ def inicio():
         'categorias-productos/inicio.html',
         module=MODULE,
         categorias=categorias_data,
-        buscar=buscar
+        buscar=buscar,
+        estatus=estatus,
     )
 
 
@@ -81,15 +85,11 @@ def agregar():
 def detalle(id):
     categoria = CategoriaProducto.query.get_or_404(id)
     
-    # Redirigir si la categoría no está activa
-    if categoria.estatus != 'ACTIVO':
-        flash('La categoría no está disponible', 'warning')
-        return redirect(url_for('categorias_productos.inicio'))
-    
     categoria_data = {
         'id': categoria.id,
         'nombre': categoria.nombre,
         'descripcion': categoria.descripcion,
+        'estatus': categoria.estatus,
     }
     
     return render_template('categorias-productos/detalle.html', categoria=categoria_data, module=MODULE)
@@ -101,7 +101,7 @@ def editar(id):
     
     if categoria.estatus != 'ACTIVO':
         flash('No puedes editar una categoría inactiva', 'warning')
-        return redirect(url_for('categorias_productos.inicio'))
+        return redirect(url_for('categorias_productos.inicio', estatus="INACTIVO"))
     
     form = EditCategoriaProductoForm()
     form.categoria_id = id
@@ -181,3 +181,20 @@ def eliminar(id):
 def not_found(error):
     flash('La categoría solicitada no existe', 'error')
     return redirect(url_for('categorias_productos.inicio')), 404
+
+
+@categorias_productos.route('/activar/<int:id>', methods=['POST'])
+def activar(id):
+    categoria = CategoriaProducto.query.get_or_404(id)
+
+    if categoria.estatus == 'ACTIVO':
+        flash('La categoría ya está activa', 'warning')
+        return redirect(url_for('categorias_productos.inicio'))
+
+    categoria.estatus = 'ACTIVO'
+    categoria.usuario_movimiento = get_user_id()
+    categoria.fecha_movimiento = datetime.utcnow()
+    db.session.commit()
+
+    flash(f'Categoría "{categoria.nombre}" activada correctamente', 'success')
+    return redirect(url_for('categorias_productos.inicio', estatus="INACTIVO"))

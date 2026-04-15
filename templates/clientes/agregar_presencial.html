@@ -1,9 +1,11 @@
 {% extends "layout.html" %} 
 {% block page_title %}Clientes{% endblock %}
 {% block card_title %}Agregar cliente{% endblock %}
-{% from "macros/forms.html" import render_input %}
+{% from "macros/forms.html" import render_input, render_flash %}
 
 {% block content %}
+
+{{ render_flash() }}
 
 <form method="POST" enctype="multipart/form-data" class="form-container">
 
@@ -24,5 +26,18 @@
     </div>
 
 </form>
+
+{% if session.get('alert_cliente_user') and session.get('alert_cliente_password') %}
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+    window.showInfoDialog({
+        title: "Cliente registrado",
+        text: "Se creó la cuenta del cliente para pedidos en línea.",
+        itemText: "Usuario: {{ session.pop('alert_cliente_user') }} | Contraseña: {{ session.pop('alert_cliente_password') }}",
+        confirmText: "Entendido"
+    });
+});
+</script>
+{% endif %}
 
 {% endblock %}

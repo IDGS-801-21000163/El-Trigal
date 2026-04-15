@@ -21,6 +21,11 @@
             name="buscar"
             value="{{ buscar or '' }}"
             placeholder="Buscar empleado...">
+        <select class="form-input form-input--compact" name="estatus" style="max-width:220px;">
+            <option value="ACTIVO" {% if (estatus or 'ACTIVO') == 'ACTIVO' %}selected{% endif %}>Activos</option>
+            <option value="INACTIVO" {% if estatus == 'INACTIVO' %}selected{% endif %}>Inactivos</option>
+            <option value="TODOS" {% if estatus == 'TODOS' %}selected{% endif %}>Todos</option>
+        </select>
         <button class="btn btn-outline" type="submit">Buscar</button>
     </form>
 
@@ -43,8 +48,8 @@
         <!-- HEADER -->
         <div class="employee-header">
     
-    {% if item.persona and item.persona.foto %}
-        <img src="{{ item.persona.foto }}" class="avatar-img">
+    {% if item.persona_foto_url %}
+        <img src="{{ item.persona_foto_url }}" class="avatar-img">
     {% else %}
         <div class="avatar">
             {{ item.persona.nombre[0] if item.persona and item.persona.nombre else '?' }}
@@ -88,6 +93,16 @@
             <a href="{{ url_for(endpoint ~ '.editar', id=item.id) }}" class="btn btn-primary">
                 Editar
             </a>
+
+            {% if item.estatus == 'ACTIVO' %}
+            <button type="button" class="btn btn-danger-outline btn-full-row js-toggle-employee" data-url="{{ url_for(endpoint ~ '.eliminar', id=item.id) }}">
+                Eliminar
+            </button>
+            {% else %}
+            <a href="{{ url_for(endpoint ~ '.activar', id=item.id) }}" class="btn btn-outline btn-full-row">
+                Activar
+            </a>
+            {% endif %}
         </div>
 
     </article>
@@ -97,7 +112,21 @@
 </section>
 
 <script>
-// Busqueda migrada a servidor via ?buscar=...
+document.addEventListener("DOMContentLoaded", () => {
+    document.querySelectorAll(".js-toggle-employee").forEach((btn) => {
+        btn.addEventListener("click", async () => {
+            const url = btn.dataset.url;
+            const result = await window.showConfirmDialog({
+                title: "¿Eliminar empleado?",
+                text: "Se dará de baja (INACTIVO). Si tiene dependencias, no se permitirá.",
+                confirmText: "Sí, eliminar",
+                cancelText: "Cancelar",
+                variant: "danger",
+            });
+            if (result.isConfirmed) window.location.href = url;
+        });
+    });
+});
 </script>
 
 {% endblock %}

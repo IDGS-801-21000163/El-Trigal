@@ -4,7 +4,8 @@ from models import MetodoPago, Modulo, Rol, RolModulo, Usuario, db
 
 
 DEFAULT_MODULES = [
-    {"ruta": "dashboard-reportes", "nombre": "Dashboard y reportes", "icon": "dashboard", "description": "Panel ejecutivo con indicadores, alertas operativas y reportes exportables."},
+    {"ruta": "dashboard", "nombre": "Dashboard", "icon": "dashboard", "description": "Panel ejecutivo con indicadores y alertas operativas."},
+    {"ruta": "reportes", "nombre": "Reportes", "icon": "reportes", "description": "Descarga de reportes (tops, rangos de fechas, clientes y ventas)."},
     {"ruta": "usuarios", "nombre": "Usuarios", "icon": "usuarios", "description": "Administracion de accesos, roles y credenciales del sistema."},
     {"ruta": "puestos", "nombre": "Puestos", "icon": "puestos", "description": "Catalogo de puestos, actividades y sueldo base del personal."},
     {"ruta": "empleados", "nombre": "Empleados", "icon": "empleados", "description": "Registro del personal, puesto asignado y control operativo."},
@@ -20,6 +21,7 @@ DEFAULT_MODULES = [
     {"ruta": "inventario-productos", "nombre": "Inventario productos", "icon": "inventario", "description": "Consulta y ajuste visual del inventario de productos terminados."},
     {"ruta": "produccion", "nombre": "Produccion", "icon": "produccion", "description": "Seguimiento de produccion con estado, empleado y control de merma."},
     {"ruta": "pedidos", "nombre": "Pedidos", "icon": "pedidos", "description": "Pedidos en linea y presenciales con carrito, pago y seguimiento."},
+    {"ruta": "pedidos-presencial", "nombre": "Pedidos presencial", "icon": "pedidos", "description": "Registro de pedidos presenciales con anticipo, entrega y solicitud a produccion."},
     {"ruta": "ventas", "nombre": "Ventas", "icon": "ventas", "description": "Operacion de venta, caja, ticket y movimiento de inventario."},
     {"ruta": "pos", "nombre": "Punto de venta", "icon": "pos", "description": "Caja operativa con carrito local, cobro, tickets y corte de caja."},
     {"ruta": "solicitud-produccion", "nombre": "Solicitud de Producción", "icon": "solicitud", "description": "Solicitud desde ventas para producir productos cuando el stock es insuficiente."},
@@ -85,16 +87,29 @@ def ensure_module_catalog():
 
 
 def ensure_role_module_permissions():
-    roles = {rol.nombre: rol for rol in Rol.query.filter(Rol.nombre.in_([ROL_ADMIN, ROL_EMPLEADO, ROL_CLIENTE])).all()}
+    # Soportar nombres legacy en BD (ej: "Administrador", "Cliente") además de los códigos internos.
+    all_roles = Rol.query.all()
+    roles_by_name = {rol.nombre: rol for rol in all_roles}
+
+    def pick_role(*names):
+        for name in names:
+            if name in roles_by_name:
+                return roles_by_name[name]
+        return None
+
+    rol_admin = pick_role(ROL_ADMIN, "Administrador", "ADMINISTRADOR")
+    rol_empleado = pick_role(ROL_EMPLEADO, "Empleado", "EMPLEADO")
+    rol_cliente = pick_role(ROL_CLIENTE, "Cliente", "CLIENTE")
+
     modulos = {modulo.ruta: modulo for modulo in Modulo.query.all()}
 
-    if not roles or not modulos:
+    if not modulos:
         return
 
     desired = {
-        ROL_ADMIN: list(modulos.keys()),
-        ROL_EMPLEADO: [ruta for ruta in modulos.keys() if ruta != "usuarios"],
-        ROL_CLIENTE: ["pedidos"],
+        (rol_admin.id if rol_admin else None): list(modulos.keys()),
+        (rol_empleado.id if rol_empleado else None): [ruta for ruta in modulos.keys() if ruta != "usuarios"],
+        (rol_cliente.id if rol_cliente else None): ["pedidos"],
     }
 
     existing_pairs = {
@@ -104,19 +119,18 @@ def ensure_role_module_permissions():
 
     created = False
 
-    for role_name, rutas in desired.items():
-        rol = roles.get(role_name)
-        if not rol:
+    for role_id, rutas in desired.items():
+        if not role_id:
             continue
 
         for ruta in rutas:
             modulo = modulos.get(ruta)
             if not modulo:
                 continue
-            pair = (rol.id, modulo.id)
+            pair = (role_id, modulo.id)
             if pair in existing_pairs:
                 continue
-            db.session.add(RolModulo(fk_rol=rol.id, fk_modulo=modulo.id))
+            db.session.add(RolModulo(fk_rol=role_id, fk_modulo=modulo.id))
             created = True
 
     if created:
@@ -160,7 +174,7 @@ def get_first_allowed_module(role_id):
     if not modules:
         return None
 
-    dashboard = next((item for item in modules if item["slug"] == "dashboard-reportes"), None)
+    dashboard = next((item for item in modules if item["slug"] == "dashboard"), None)
     return dashboard or modules[0]
 
 

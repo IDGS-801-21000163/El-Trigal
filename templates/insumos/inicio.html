@@ -48,7 +48,6 @@
                 <p class="employee-role">{{ item.insumo.categoria.nombre }}</p>
             </div>
             <div class="employee-body">
-                <div class="employee-meta"><span>Merma:</span> {{ '%.2f'|format(item.insumo.porcentaje_merma or 0) }}%</div>
                 <div class="employee-meta"><span>Existencia total:</span> {{ '%.2f'|format(item.existencia.total) }}</div>
                 <div class="employee-meta"><span>Estado:</span> {{ item.existencia.estado }}</div>
                 <div class="employee-meta"><span>Compras:</span> {{ item.compras }}</div>

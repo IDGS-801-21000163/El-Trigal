@@ -21,9 +21,8 @@
 
         <!-- IMAGEN -->
         <div style="width:100px; height:100px; border-radius:10px; overflow:hidden; background:#f3f4f6; display:flex; align-items:center; justify-content:center; font-size:2.5rem; flex-shrink:0;">
-            {% if inventario.insumo.foto %}
-                <img src="data:image/png;base64,{{ inventario.insumo.foto }}"
-                     style="width:100%; height:100%; object-fit:cover;">
+            {% if imagen %}
+                <img src="{{ imagen }}" style="width:100%; height:100%; object-fit:cover;">
             {% else %}
                 🧂
             {% endif %}
@@ -80,11 +79,14 @@
         </label>
 
         <label class="form-group">
-            <span>{{ form.cantidad.label.text }}</span>
+            <span>{{ form.cantidad.label.text }}{% if inventario.unidad %} ({{ inventario.unidad.nombre }}){% endif %}</span>
             {{ form.cantidad(class="form-input") }}
             {% if form.cantidad.errors %}
             <span class="form-error">{{ form.cantidad.errors[0] }}</span>
             {% endif %}
+            <small style="color:var(--text-mid, #6b7280); display:block; margin-top:6px;">
+                La cantidad se captura en la unidad actual del inventario.
+            </small>
         </label>
 
         <label class="form-group" style="grid-column: 1 / -1;">

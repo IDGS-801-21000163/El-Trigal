@@ -41,7 +41,7 @@
                         <h3>{{ item.nombre }}</h3>
                         <div class="pedido-product-card__row">
                             <strong>${{ '%.2f'|format(item.precio) }}</strong>
-                            <span>{{ item.stock_label }}</span>
+                            <span>Se produce a pedido</span>
                         </div>
                         <form method="post" action="{{ url_for('pedidos.agregar_al_carrito') }}" class="pedido-add-form">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -54,10 +54,11 @@
                                     name="cantidad"
                                     value="1"
                                     min="1"
-                                    max="{{ item.stock|int if item.stock > 0 else 1 }}"
+                                    step="1"
                                     inputmode="numeric">
-                                <button class="pedido-qty-btn" type="button" data-qty-action="plus" {% if item.stock <= 1 %}disabled{% endif %}>+</button>
+                                <button class="pedido-qty-btn" type="button" data-qty-action="plus">+</button>
                             </div>
+                            <small class="muted">Charolas (1 charola = 10 piezas)</small>
                             <button type="submit" class="btn btn-primary">Agregar</button>
                         </form>
                     </div>
@@ -91,15 +92,15 @@
                                     <form method="post" action="{{ url_for('pedidos.actualizar_carrito') }}">
                                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                         <input type="hidden" name="producto_id" value="{{ item.producto_id }}">
-                                        <input type="hidden" name="cantidad" value="{{ item.cantidad - 1 }}">
-                                        <button type="submit" class="pedido-cart-qty-btn" {% if item.cantidad <= 1 %}disabled{% endif %}>-</button>
+                                        <input type="hidden" name="cantidad" value="{{ item.charolas - 1 }}">
+                                        <button type="submit" class="pedido-cart-qty-btn" {% if item.charolas <= 1 %}disabled{% endif %}>-</button>
                                     </form>
-                                    <span class="pedido-cart-qty-display">{{ item.cantidad }}</span>
+                                    <span class="pedido-cart-qty-display">{{ item.charolas }}</span>
                                     <form method="post" action="{{ url_for('pedidos.actualizar_carrito') }}">
                                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                         <input type="hidden" name="producto_id" value="{{ item.producto_id }}">
-                                        <input type="hidden" name="cantidad" value="{{ item.cantidad + 1 }}">
-                                        <button type="submit" class="pedido-cart-qty-btn" {% if item.cantidad >= item.stock %}disabled{% endif %}>+</button>
+                                        <input type="hidden" name="cantidad" value="{{ item.charolas + 1 }}">
+                                        <button type="submit" class="pedido-cart-qty-btn">+</button>
                                     </form>
                                     <form method="post" action="{{ url_for('pedidos.eliminar_del_carrito') }}">
                                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -183,7 +184,9 @@ document.addEventListener("DOMContentLoaded", () => {
         const input = control.querySelector("input[name='cantidad']");
         const minus = control.querySelector("[data-qty-action='minus']");
         const plus = control.querySelector("[data-qty-action='plus']");
-        const max = Math.max(parseInt(input?.getAttribute("max") || "1", 10), 1);
+        const rawMax = input?.getAttribute("max");
+        // En pedidos por charolas no validamos stock; si no hay "max", dejar crecer.
+        const max = rawMax ? Math.max(parseInt(rawMax || "1", 10), 1) : 999;
 
         if (!input || !minus || !plus) {
             return;

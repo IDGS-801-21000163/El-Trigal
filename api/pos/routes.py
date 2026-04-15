@@ -4,6 +4,8 @@ from models import db, Producto, Venta, VentaDetalle, VentaPago, MetodoPago, Caj
     Persona, InventarioProducto, Pedido, SolicitudProduccion, UnidadMedida
 from decimal import Decimal
 import datetime
+import base64
+from sqlalchemy import func
 from utils.session import (
     get_current_employee_id,
     get_current_user_id,
@@ -19,7 +21,12 @@ def get_carrito():
 
 
 def calcular_totales(carrito):
-    subtotal = sum(Decimal(item["precio"]) * item["cantidad"] for item in carrito)
+    subtotal = Decimal("0.00")
+    for item in carrito:
+        precio = Decimal(str(item.get("precio") or 0))
+        cantidad = Decimal(str(item.get("cantidad") or 0))
+        subtotal += precio * cantidad
+    subtotal = subtotal.quantize(Decimal("0.01"))
     total = subtotal
     return subtotal, total
 
@@ -38,6 +45,30 @@ def normalize_payment_method_label(nombre):
     if nombre_limpio.lower() == "tarjeta guardada":
         return "Tarjeta"
     return nombre_limpio
+
+
+def _get_product_lots(producto_id, sucursal_id, now=None):
+    """Lotes vigentes (no merma) ordenados por FEFO."""
+    if now is None:
+        now = datetime.datetime.now()
+    today = now.date()
+    return (
+        InventarioProducto.query.filter(
+            InventarioProducto.fk_producto == producto_id,
+            InventarioProducto.fk_sucursal == sucursal_id,
+            InventarioProducto.estatus == "ACTIVO",
+            InventarioProducto.es_merma == 0,
+            InventarioProducto.cantidad_producto > 0,
+            func.date(InventarioProducto.fecha_caducidad) >= today,
+        )
+        .order_by(InventarioProducto.fecha_caducidad.asc(), InventarioProducto.id.asc())
+        .all()
+    )
+
+
+def _get_product_stock(producto_id, sucursal_id, now=None):
+    lots = _get_product_lots(producto_id, sucursal_id, now=now)
+    return float(sum((l.cantidad_producto or 0) for l in lots))
 
 
 def _resolve_cliente_id(raw_cliente_id, usuario_id):
@@ -95,21 +126,45 @@ def inicio():
     sucursal_id = get_default_sucursal_id()
     usuario_id = get_current_user_id()
     empleado_id = get_current_employee_id()
+    now = datetime.datetime.now()
+    today = now.date()
 
     pedidos_listos = Pedido.query.filter(
         Pedido.estado == "LISTO"
     ).all()
 
-    productos = db.session.query(
-        Producto,
-        InventarioProducto.cantidad_producto
-    ).join(
-        InventarioProducto,
-        Producto.id == InventarioProducto.fk_producto
-    ).filter(
-        Producto.estatus == "ACTIVO",
-        InventarioProducto.fk_sucursal == sucursal_id
-    ).all()
+    # Stock disponible: solo lotes vigentes (no caducados), no merma.
+    productos = (
+        db.session.query(
+            Producto,
+            func.coalesce(func.sum(InventarioProducto.cantidad_producto), 0).label("stock"),
+        )
+        .outerjoin(
+            InventarioProducto,
+            (Producto.id == InventarioProducto.fk_producto)
+            & (InventarioProducto.fk_sucursal == sucursal_id)
+            & (InventarioProducto.estatus == "ACTIVO")
+            & (InventarioProducto.es_merma == 0)
+            & (InventarioProducto.cantidad_producto > 0)
+            & (func.date(InventarioProducto.fecha_caducidad) >= today),
+        )
+        .filter(Producto.estatus == "ACTIVO")
+        .group_by(Producto.id)
+        .all()
+    )
+
+    # Asegura un src válido para el POS (foto en BD es BLOB/bytes).
+    productos_fix = []
+    for producto, stock in productos:
+        foto_url = None
+        raw = getattr(producto, "foto", None)
+        if isinstance(raw, (bytes, bytearray)) and raw:
+            foto_url = f"data:image/png;base64,{base64.b64encode(raw).decode('utf-8')}"
+        elif isinstance(raw, str) and raw:
+            foto_url = raw if raw.startswith("data:image") else f"data:image/png;base64,{raw}"
+        setattr(producto, "foto_url", foto_url)
+        productos_fix.append((producto, stock))
+    productos = productos_fix
 
     clientes = Cliente.query.filter_by(estatus="ACTIVO").all()
     metodos_pago = MetodoPago.query.filter_by(estatus="ACTIVO").order_by(MetodoPago.id.asc()).all()
@@ -237,12 +292,8 @@ def inicio():
 
         producto_id = int(request.form.get("producto_id"))
 
-        inventario = InventarioProducto.query.filter_by(
-            fk_producto=producto_id,
-            fk_sucursal=sucursal_id
-        ).first()
-
-        if not inventario or inventario.cantidad_producto <= 0:
+        stock_disponible = _get_product_stock(producto_id, sucursal_id, now=now)
+        if stock_disponible <= 0:
 
             solicitud_existente = SolicitudProduccion.query.filter(
                 SolicitudProduccion.fk_producto == producto_id,
@@ -255,7 +306,8 @@ def inicio():
                 solicitud = SolicitudProduccion(
                     fk_producto=producto_id,
                     fk_empleado=empleado_id,
-                    cantidad_solicitada=1,
+                    # Siempre solicitar por charola: 10 piezas por charola.
+                    cantidad_solicitada=10,
                     estado="PENDIENTE",
                     usuario_creacion=usuario_id,
                     usuario_movimiento=usuario_id
@@ -306,11 +358,12 @@ def inicio():
                         fk_sucursal=sucursal_id
                     ).first()
 
-                    if not inventario:
-                        flash("No hay inventario registrado", "error")
+                    stock_disponible = _get_product_stock(id_producto, sucursal_id, now=now)
+                    if stock_disponible <= 0:
+                        flash("No hay stock disponible", "error")
                         return redirect(url_for("pos.inicio"))
 
-                    if item["cantidad"] >= inventario.cantidad_producto:
+                    if item["cantidad"] >= stock_disponible:
                         flash("No hay más stock disponible", "error")
                         return redirect(url_for("pos.inicio"))
 
@@ -372,12 +425,8 @@ def inicio():
 
         # 🔥 VALIDAR STOCK
         for item in carrito:
-            inventario = InventarioProducto.query.filter_by(
-                fk_producto=item["id"],
-                fk_sucursal=sucursal_id
-            ).first()
-
-            if not inventario or inventario.cantidad_producto < item["cantidad"]:
+            stock_disponible = _get_product_stock(item["id"], sucursal_id, now=now)
+            if stock_disponible < item["cantidad"]:
                 flash(f"Stock insuficiente para {item['nombre']}", "error")
                 return redirect(url_for("pos.inicio"))
 
@@ -401,11 +450,12 @@ def inicio():
         )
 
         db.session.add(venta)
-        db.session.commit()
+        db.session.flush()
 
         # 🔥 DETALLES
+        venta_detalles = []
         for item in carrito:
-            db.session.add(VentaDetalle(
+            detalle = VentaDetalle(
                 fk_venta=venta.id,
                 fk_producto=item["id"],
                 fk_unidad=unidad_id,
@@ -416,7 +466,10 @@ def inicio():
                 usuario_movimiento=usuario_id,
                 fecha_creacion=now,
                 fecha_movimiento=now,
-            ))
+            )
+            db.session.add(detalle)
+            db.session.flush()
+            venta_detalles.append((detalle, item))
 
         # 🔥 PAGO
         db.session.add(VentaPago(
@@ -439,20 +492,33 @@ def inicio():
             fecha_movimiento=now,
         ))
 
-        db.session.commit()
+        # 🔥 INVENTARIO (FEFO por lotes) + trazabilidad venta_detalle_lote
+        from models import VentaDetalleLote  # import local para evitar ciclos
 
-        # 🔥 INVENTARIO
-        for item in carrito:
-            inventario = InventarioProducto.query.filter_by(
-                fk_producto=item["id"],
-                fk_sucursal=sucursal_id
-            ).first()
+        for detalle, item in venta_detalles:
+            restante = float(item["cantidad"])
+            lots = _get_product_lots(item["id"], sucursal_id, now=now)
 
-            if inventario:
-                inventario.cantidad_producto -= item["cantidad"]
+            for lot in lots:
+                if restante <= 0:
+                    break
+                disponible = float(lot.cantidad_producto or 0)
+                if disponible <= 0:
+                    continue
+                usar = min(disponible, restante)
+                lot.cantidad_producto = float(lot.cantidad_producto or 0) - usar
+                lot.usuario_movimiento = usuario_id
+                db.session.add(
+                    VentaDetalleLote(
+                        fk_venta_detalle=detalle.id,
+                        fk_inventario_producto=lot.id,
+                        cantidad=usar,
+                    )
+                )
+                restante -= usar
 
-                if inventario.cantidad_producto <= 0:
-                    inventario.estado = "AGOTADO"
+            if restante > 0:
+                raise RuntimeError(f"Stock insuficiente (lotes vigentes) para {item['nombre']}.")
 
         db.session.commit()
 

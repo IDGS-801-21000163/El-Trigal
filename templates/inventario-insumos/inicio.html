@@ -48,7 +48,7 @@
         <!-- CANTIDAD -->
         <div style="text-align:center;">
             <span class="puesto-sueldo">
-                {{ ('%.2f'|format(item.cantidad|float)).rstrip('0').rstrip('.') }} {{ item.unidad.nombre if item.unidad else '' }}
+                {{ ('%.2f'|format(item.cantidad_display|float)).rstrip('0').rstrip('.') }} {{ item.unidad_display }}
             </span>
         </div>
 

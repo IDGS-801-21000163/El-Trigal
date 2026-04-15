@@ -18,6 +18,12 @@
             {% endfor %}
         </select>
 
+        <select name="estatus" class="form-input form-input--compact" style="max-width:220px;">
+            <option value="ACTIVO" {% if (estatus or 'ACTIVO') == 'ACTIVO' %}selected{% endif %}>Activas</option>
+            <option value="INACTIVO" {% if estatus == 'INACTIVO' %}selected{% endif %}>Inactivas</option>
+            <option value="TODOS" {% if estatus == 'TODOS' %}selected{% endif %}>Todas</option>
+        </select>
+
         <button class="btn btn-outline" type="submit">Filtrar</button>
     </form>
 
@@ -60,6 +66,13 @@
         <div class="employee-actions">
             <a href="{{ url_for('recetas.detalleReceta') }}?id={{ r.id }}" class="btn btn-outline">Ver</a>
             <a href="{{ url_for('recetas.editarReceta') }}?id={{ r.id }}" class="btn btn-primary">Editar</a>
+            {% if (estatus or 'ACTIVO') == 'INACTIVO' %}
+            <form method="POST" action="{{ url_for('recetas.activarReceta') }}" style="display:inline;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="id" value="{{ r.id }}">
+                <button type="submit" class="btn btn-outline">Activar</button>
+            </form>
+            {% endif %}
         </div>
     </article>
     {% else %}

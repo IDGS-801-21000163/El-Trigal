@@ -1,0 +1,216 @@
+{% extends "layout2.html" %}
+
+{% block page_title %}Gestión de Pedidos{% endblock %}
+{% block card_title %}Lista de Pedidos{% endblock %}
+
+{% block content %}
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+{% if messages %}
+
+<div class="mb-4 space-y-2">
+    {% for category, message in messages %}
+    <div class="p-3 rounded-lg text-sm flex items-center gap-2
+        {% if category == 'success' %}
+            bg-green-100 text-green-700 border border-green-300
+        {% else %}
+            bg-red-100 text-red-700 border border-red-300
+        {% endif %}">
+        <span>{% if category == 'success' %}✔{% else %}⚠{% endif %}</span>
+        <span>{{ message }}</span>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+{% endwith %}
+
+<div class="bg-white p-6 rounded-2xl shadow border border-[#f1e7cf]">
+
+
+<!--  FILTROS -->
+<div class="flex flex-col md:flex-row gap-3 mb-6">
+
+    <input type="text"
+           id="buscador"
+           placeholder="Buscar por cliente, tipo o ID..."
+           class="w-full md:w-64 px-4 py-2 rounded-full border border-[#AA8368] focus:ring-2 focus:ring-[#EFBF5D] outline-none">
+
+    <select id="filtroEstado"
+            class="px-4 py-2 rounded-full border border-[#AA8368] focus:ring-2 focus:ring-[#EFBF5D]">
+        <option value="">Todos los estados</option>
+        <option value="esperando">Esperando</option>
+        <option value="en producción">Producción</option>
+        <option value="listo">Listo</option>
+        <option value="entregado">Entregado</option>
+        <option value="cancelado">Cancelado</option>
+    </select>
+
+    <input type="date"
+           id="filtroFecha"
+           class="px-4 py-2 rounded-full border border-[#AA8368] focus:ring-2 focus:ring-[#EFBF5D]">
+
+    <a href="{{ url_for('pedidos.agregar') }}"
+       class="bg-[#ae712f] text-white px-4 py-2 rounded-lg hover:bg-[#8d5c26] transition">
+        + Agregar
+    </a>
+</div>
+
+<!--  TABLA -->
+<table class="w-full text-sm">
+
+    <thead class="bg-[#f1e7cf] text-[#ae712f]">
+        <tr>
+            <th class="p-2 text-left">ID</th>
+            <th>Tipo</th>
+            <th>Cliente</th>
+            <th>Entrega</th>
+            <th>Estado</th>
+            <th>Acción</th>
+            <th>Total</th>
+            <th></th>
+        </tr>
+    </thead>
+
+    <tbody>
+        {% for p in pedidos %}
+        <tr class="fila-pedido border-b hover:bg-[#f9f3e7] transition"
+            data-id="{{ p.id }}"
+            data-cliente="{{ p.cliente.persona.nombre }} {{ p.cliente.persona.apellido_uno }}"
+            data-estado="{{ p.estado|lower }}"
+            data-tipo="{{ p.tipo_pedido|lower }}"
+            data-fecha="{{ p.fecha_entrega.strftime('%Y-%m-%d') }}">
+
+            <!-- ID -->
+            <td class="p-2 font-semibold">{{ p.id }}</td>
+
+            <!-- TIPO -->
+            <td>
+                {% if p.tipo_pedido == "ONLINE" %}
+                    <span class="bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-xs">🌐 Online</span>
+                {% else %}
+                    <span class="bg-[#f1e7cf] text-[#ae712f] px-2 py-1 rounded-full text-xs">🏪 Presencial</span>
+                {% endif %}
+            </td>
+
+            <td>
+                {{ p.cliente.persona.nombre }}
+                {{ p.cliente.persona.apellido_uno }}
+            </td>
+
+            <td class="text-gray-600">
+                {{ p.fecha_entrega.strftime('%d/%m/%Y') }}
+            </td>
+
+            <td>
+                {% if p.estado == "ESPERANDO" %}
+                    <span class="bg-yellow-100 text-yellow-700 px-2 py-1 rounded-full text-xs">🕒 Esperando</span>
+                {% elif p.estado == "EN PRODUCCIÓN" %}
+                    <span class="bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-xs">🧑‍🍳 Producción</span>
+                {% elif p.estado == "LISTO" %}
+                    <span class="bg-green-100 text-green-700 px-2 py-1 rounded-full text-xs">✅ Listo</span>
+                {% elif p.estado == "ENTREGADO" %}
+                    <span class="bg-gray-200 text-gray-700 px-2 py-1 rounded-full text-xs">📦 Entregado</span>
+                {% elif p.estado == "CANCELADO" %}
+                    <span class="bg-red-100 text-red-700 px-2 py-1 rounded-full text-xs">❌ Cancelado</span>
+                {% endif %}
+            </td>
+
+            <td>
+                <form method="POST"
+                      action="{{ url_for('pedidos.cambiar_estado', id=p.id) }}"
+                      class="flex items-center gap-2">
+
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                    <select name="estado"
+                            class="px-2 py-1 text-xs rounded-lg border border-gray-300 focus:ring-2 focus:ring-[#EFBF5D]">
+
+                        {% if p.estado == "ESPERANDO" %}
+                            <option value="EN PRODUCCIÓN">Producción</option>
+                            <option value="CANCELADO">Cancelar</option>
+
+                        {% elif p.estado == "EN PRODUCCIÓN" %}
+                            <option value="LISTO">Marcar como Listo</option>
+
+                        {% else %}
+                            <option disabled>{{ p.estado }}</option>
+                        {% endif %}
+                    </select>
+
+                    {% if p.estado not in ["ENTREGADO", "CANCELADO", "LISTO"] %}
+                    <button class="text-xs bg-[#ae712f] text-white px-2 py-1 rounded hover:bg-[#8d5c26] transition">
+                        Guardar
+                    </button>
+                    {% endif %}
+
+                </form>
+            </td>
+
+            <td class="font-semibold text-[#ae712f]">
+                ${{ p.detalles | sum(attribute='subtotal') }}
+            </td>
+
+            <td>
+                <a href="{{ url_for('pedidos.detalle', id=p.id) }}"
+                   class="text-[#ae712f] text-xs hover:underline">
+                    Ver
+                </a>
+            </td>
+
+        </tr>
+        {% endfor %}
+    </tbody>
+
+</table>
+
+
+</div>
+
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+    const buscador = document.getElementById("buscador");
+    const filtroEstado = document.getElementById("filtroEstado");
+    const filtroFecha = document.getElementById("filtroFecha");
+    const filas = document.querySelectorAll(".fila-pedido");
+
+    function filtrar() {
+        const texto = buscador.value.toLowerCase().trim();
+        const estado = filtroEstado.value.toLowerCase();
+        const fecha = filtroFecha.value;
+
+        filas.forEach(fila => {
+            const id = String(fila.dataset.id);
+            const cliente = fila.dataset.cliente.toLowerCase();
+            const tipo = fila.dataset.tipo.toLowerCase();
+            const estadoFila = fila.dataset.estado;
+            const fechaFila = fila.dataset.fecha;
+
+            const coincideTexto =
+                id.includes(texto) ||
+                cliente.includes(texto) ||
+                tipo.includes(texto);
+
+            const coincideEstado =
+                !estado || estadoFila === estado;
+
+            const coincideFecha =
+                !fecha || fechaFila === fecha;
+
+            if (coincideTexto && coincideEstado && coincideFecha) {
+                fila.style.display = "";
+            } else {
+                fila.style.display = "none";
+            }
+        });
+    }
+
+    buscador.addEventListener("input", filtrar);
+    filtroEstado.addEventListener("change", filtrar);
+    filtroFecha.addEventListener("change", filtrar);
+
+});
+</script>
+
+{% endblock %}
